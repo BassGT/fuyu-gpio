@@ -1,0 +1,52 @@
+cabal-version:      3.0
+name:               fuyu-gpio
+version:            0.1.0.0
+synopsis:           Abstract high-level layer for fuyu-gpio-direct
+description:        High-level managed abstraction layer built on top of fuyu-gpio-direct for libgpiod.
+license:            LGPL-2.1-or-later
+license-file:       LICENSE
+author:             BassGT
+maintainer:         springtrap9397@gmail.com
+-- copyright:
+category:           System
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+
+source-repository head
+    type:     git
+    location: https://github.com/BassGT/fuyu-gpio.git
+
+common warnings
+    ghc-options: -Wall
+
+library
+    import:           warnings
+    exposed-modules:  Fuyu.GPIO,
+                      Fuyu.GPIO.Chip,
+                      Fuyu.GPIO.Chip.Info,
+                      Fuyu.GPIO.Chip.Info.Unsafe,
+                      Fuyu.GPIO.Chip.Unsafe,
+                      Fuyu.GPIO.Line,
+                      Fuyu.GPIO.Line.Info,
+                      Fuyu.GPIO.Line.Info.Unsafe,
+                      Fuyu.GPIO.Line.Unsafe,
+                      Fuyu.GPIO.RequestConfig,
+                      Fuyu.GPIO.RequestConfig.Unsafe,
+                      Fuyu.GPIO.EdgeEvent,
+                      Fuyu.GPIO.EdgeEvent.Unsafe,
+                      Fuyu.GPIO.Exception
+
+    other-modules:    Fuyu.GPIO.Types
+
+    -- other-extensions:
+    build-depends:    base >= 4.18 && < 5,
+                      fuyu-gpio-direct ^>=0.1.0.0,
+                      bytestring ^>=0.12.1.0,
+                      vector ^>=0.13.1.0
+
+
+    hs-source-dirs:   src
+    default-language: Haskell2010
+    default-extensions: PatternSynonyms
+
+

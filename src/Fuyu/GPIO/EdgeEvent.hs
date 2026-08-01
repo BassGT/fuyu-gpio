@@ -1,0 +1,118 @@
+{-# LANGUAGE PatternSynonyms #-}
+
+-- |
+-- Module      : Fuyu.GPIO.EdgeEvent
+-- Description : High-level edge event waiting, reading, and buffer management.
+-- Maintainer  : BassGT
+-- Stability   : experimental
+-- Portability : POSIX (Linux gpiod v2)
+--
+-- This module provides managed resource brackets ('withEventBuffer') and functions for waiting
+-- on edge events ('waitEdgeEvents') and reading them ('readEdgeEvents') securely using the
+-- 'ReadyRequest' capability token.
+module Fuyu.GPIO.EdgeEvent
+  ( -- * Security Token & Wait Result
+    WaitResult(..)
+  , ReadyRequest(..)
+  , readyToRequest
+
+    -- * Buffer & Event Types
+  , Buffer
+  , Capacity
+  , pattern EventBufferCapacity
+  , BufferIndex
+  , pattern BufferIndex
+  , Event
+  , Timeout
+  , pattern Nanoseconds
+  , pattern Immediate
+  , pattern Infinite
+  , Timestamp
+  , EdgeEventType
+  , pattern Rising
+  , pattern Falling
+
+    -- * Event Buffer Operations (Managed)
+  , withEventBuffer
+  , eventBufferCapacity
+  , eventBufferNumEvents
+  , eventBufferGetEvent
+
+    -- * Waiting & Reading Events
+  , waitEdgeEvents
+  , readEdgeEvents
+
+    -- * RawEdgeEvent Metadata Accessors
+  , getEventType
+  , getTimestampNs
+  , getLineOffset
+  , getGlobalSeqNo
+  , getLineSeqNo
+  , copyEvent
+  ) where
+
+import Control.Exception (bracket)
+import Data.Word (Word64)
+import qualified Fuyu.GPIO.Direct as D
+import Fuyu.GPIO.EdgeEvent.Unsafe (newEventBuffer, freeEventBuffer)
+import Fuyu.GPIO.Exception
+import Fuyu.GPIO.Types
+
+-- | Allocate an edge event buffer of the specified capacity and free it automatically afterwards.
+withEventBuffer :: Capacity -> (Buffer -> IO a) -> IO a
+withEventBuffer capacity = bracket (newEventBuffer capacity) freeEventBuffer
+
+-- | Get the capacity of an event buffer.
+eventBufferCapacity :: Buffer -> IO Word
+eventBufferCapacity = D.eventBufferCapacity
+
+-- | Get the number of events currently stored in an event buffer.
+eventBufferNumEvents :: Buffer -> IO Word
+eventBufferNumEvents = D.eventBufferNumEvents
+
+-- | Get a specific edge event from the buffer by index.
+eventBufferGetEvent :: Buffer -> D.BufferIndex -> IO Event
+eventBufferGetEvent buf idx = unwrapOrThrow ReadEdgeEventsFailed (D.eventBufferGetEvent buf idx)
+
+-- | Wait for edge events to occur on requested lines until the specified timeout.
+-- Throws 'WaitEdgeEventsFailed' on error.
+waitEdgeEvents :: Request -> Timeout -> IO WaitResult
+waitEdgeEvents req timeout = do
+  res <- unwrapOrThrow WaitEdgeEventsFailed (D.lineRequestWaitEdgeEvents req timeout)
+  pure $ case res of
+    D.EventReady -> EventReady (ReadyRequest req)
+    D.Timeout    -> TimeoutResult
+
+-- | Read up to @maxEvents@ edge events from a line request into an event buffer.
+-- Returns the number of events read into the buffer.
+-- Throws 'ReadEdgeEventsFailed' on error.
+readEdgeEvents :: ReadyRequest -> Buffer -> Word -> IO Int
+readEdgeEvents (ReadyRequest req) buf maxEvents = unwrapOrThrow ReadEdgeEventsFailed (D.lineRequestReadEdgeEvents req buf maxEvents)
+
+--------------------------------------------------------------------------------
+-- RawEdgeEvent Metadata Accessors
+--------------------------------------------------------------------------------
+
+-- | Get the type of event ('Rising' or 'Falling').
+getEventType :: Event -> IO EdgeEventType
+getEventType = D.rawEdgeEventType
+
+-- | Get the event timestamp in nanoseconds.
+getTimestampNs :: Event -> IO Timestamp
+getTimestampNs = D.rawEdgeEventTimestampNs
+
+-- | Get the offset of the line that triggered the event.
+getLineOffset :: Event -> IO Offset
+getLineOffset = D.rawEdgeEventLineOffset
+
+-- | Get the global sequence number of the event.
+getGlobalSeqNo :: Event -> IO Word64
+getGlobalSeqNo = D.rawEdgeEventGlobalSeqNo
+
+-- | Get the line-specific sequence number of the event.
+getLineSeqNo :: Event -> IO Offset
+getLineSeqNo = D.rawEdgeEventLineSeqNo
+
+-- | Make a copy of a raw edge event object.
+copyEvent :: Event -> IO Event
+copyEvent ev = unwrapOrThrow RawEdgeEventCopyFailed (D.rawEdgeEventCopy ev)

@@ -1,0 +1,5 @@
+packages:
+  .
+  ../fuyu-gpio-direct
+
+haddock-hyperlink-source: True
