@@ -1,0 +1,70 @@
+name: Deploy Haddock Documentation to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fuyu-gpio
+        uses: actions/checkout@v4
+
+      - name: Checkout fuyu-gpio-direct dependency
+        uses: actions/checkout@v4
+        with:
+          repository: BassGT/fuyu-gpio-direct
+          path: fuyu-gpio-direct
+
+      - name: Setup Haskell
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.8.4'
+          cabal-version: '3.10.3.0'
+
+      - name: Install C dependencies (libgpiod)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgpiod-dev
+
+      - name: Configure Cabal Project
+        run: |
+          cat << 'EOF' > cabal.project
+          packages:
+            .
+            ./fuyu-gpio-direct
+
+          haddock-hyperlink-source: True
+          EOF
+
+      - name: Build Haddock Documentation
+        run: cabal haddock --haddock-hyperlink-source
+
+      - name: Prepare HTML Output Directory
+        run: |
+          mkdir -p public
+          cp -r dist-newstyle/build/*/*/*/doc/html/fuyu-gpio/* public/
+
+      - name: Upload GitHub Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

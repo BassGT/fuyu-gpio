@@ -2,4 +2,10 @@ packages:
   .
   ../fuyu-gpio-direct
 
+-- Uncomment if you want to fetch fuyu-gpio-direct from GitHub instead of local directory:
+-- source-repository-package
+--   type: git
+--   location: https://github.com/BassGT/fuyu-gpio-direct.git
+--   tag: main
+
 haddock-hyperlink-source: True
