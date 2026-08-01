@@ -1,6 +1,9 @@
 packages:
   .
 
+package fuyu-gpio
+  flags: +examples
+
 -- Fetch fuyu-gpio-direct from GitHub instead of a local directory:
 source-repository-package
   type: git

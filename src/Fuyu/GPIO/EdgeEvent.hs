@@ -32,6 +32,11 @@ module Fuyu.GPIO.EdgeEvent
   , pattern Rising
   , pattern Falling
 
+    -- * Event Data Type & Parser
+  , NonEmpty(..)
+  , EdgeEvent(..)
+  , parseEdgeEvent
+
     -- * Event Buffer Operations (Managed)
   , withEventBuffer
   , eventBufferCapacity
@@ -41,6 +46,8 @@ module Fuyu.GPIO.EdgeEvent
     -- * Waiting & Reading Events
   , waitEdgeEvents
   , readEdgeEvents
+  , readEdgeEventsRaw
+  , withRawEdgeEvents
 
     -- * RawEdgeEvent Metadata Accessors
   , getEventType
@@ -52,6 +59,9 @@ module Fuyu.GPIO.EdgeEvent
   ) where
 
 import Control.Exception (bracket)
+import Control.Monad (forM)
+import Data.List.NonEmpty (NonEmpty(..))
+import qualified Data.List.NonEmpty as NE
 import Data.Word (Word64)
 import qualified Fuyu.GPIO.Direct as D
 import Fuyu.GPIO.EdgeEvent.Unsafe (newEventBuffer, freeEventBuffer)
@@ -83,11 +93,37 @@ waitEdgeEvents req timeout = do
     D.EventReady -> EventReady (ReadyRequest req)
     D.Timeout    -> TimeoutResult
 
--- | Read up to @maxEvents@ edge events from a line request into an event buffer.
--- Returns the number of events read into the buffer.
+-- | Read raw edge events into the buffer and return the number of events read.
+-- Automatically uses the buffer's full capacity.
 -- Throws 'ReadEdgeEventsFailed' on error.
-readEdgeEvents :: ReadyRequest -> Buffer -> Word -> IO Int
-readEdgeEvents (ReadyRequest req) buf maxEvents = unwrapOrThrow ReadEdgeEventsFailed (D.lineRequestReadEdgeEvents req buf maxEvents)
+readEdgeEventsRaw :: ReadyRequest -> Buffer -> IO Int
+readEdgeEventsRaw (ReadyRequest req) buf = do
+  cap <- D.eventBufferCapacity buf
+  unwrapOrThrow ReadEdgeEventsFailed (D.lineRequestReadEdgeEvents req buf cap)
+
+-- | Parse a raw edge event pointer into a pure Haskell 'EdgeEvent' structure.
+parseEdgeEvent :: Event -> IO EdgeEvent
+parseEdgeEvent ev = EdgeEvent
+  <$> D.rawEdgeEventLineOffset ev
+  <*> D.rawEdgeEventType ev
+  <*> D.rawEdgeEventTimestampNs ev
+
+-- | Read buffered edge events once 'waitEdgeEvents' indicates they are ready,
+-- parsing them into a non-empty list of pure 'EdgeEvent' structures.
+readEdgeEvents :: ReadyRequest -> Buffer -> IO (NonEmpty EdgeEvent)
+readEdgeEvents readyReq buf = withRawEdgeEvents readyReq buf parseEdgeEvent
+
+-- | Process raw edge events directly in the buffer using a callback without intermediate allocations,
+-- returning a non-empty list of results.
+withRawEdgeEvents :: ReadyRequest -> Buffer -> (Event -> IO a) -> IO (NonEmpty a)
+withRawEdgeEvents readyReq buf action = do
+  count <- readEdgeEventsRaw readyReq buf
+  results <- forM [0 .. count - 1] $ \idx -> do
+    ev <- eventBufferGetEvent buf (BufferIndex (fromIntegral idx))
+    action ev
+  case NE.nonEmpty results of
+    Just ne -> pure ne
+    Nothing -> ioError (userError "readEdgeEvents: expected at least one event from ReadyRequest but got none")
 
 --------------------------------------------------------------------------------
 -- RawEdgeEvent Metadata Accessors

@@ -27,6 +27,7 @@ module Fuyu.GPIO.Types
   , pattern Infinite
   , Timestamp
   , WaitResult(..)
+  , EdgeEvent(..)
 
     -- * Line Values & Patterns
   , Value
@@ -136,7 +137,7 @@ type InfoEventType = D.InfoEventType
 offset :: Integral a => a -> Offset
 offset n = D.LineOffset (fromIntegral n)
 
--- | Security token wrapping a 'Request' that has been confirmed ready by 'waitEdgeEvents'.
+-- | Security token wrapping a 'Request' that has been confirmed ready by 'Fuyu.GPIO.EdgeEvent.waitEdgeEvents'.
 newtype ReadyRequest = ReadyRequest Request
   deriving (Eq, Show)
 
@@ -150,98 +151,137 @@ data WaitResult
   | TimeoutResult
   deriving (Eq, Show)
 
+-- | Pure Haskell representation of a parsed edge detection event.
+data EdgeEvent = EdgeEvent
+  { eventLineOffset :: !Offset
+  , eventType       :: !EdgeEventType
+  , eventTimestamp  :: !Timestamp
+  } deriving (Eq, Ord, Show, Read)
+
+-- | Pattern constructor for 'Offset'.
 pattern Offset :: CUInt -> Offset 
 pattern Offset n = D.LineOffset n
 
+-- | Pattern constructor for 'Capacity'.
 pattern EventBufferCapacity :: CSize -> Capacity
 pattern EventBufferCapacity s = D.EventBufferCapacity s
 
+-- | Pattern constructor for 'BufferIndex'.
 pattern BufferIndex :: CULong -> BufferIndex
 pattern BufferIndex i = D.BufferIndex i
 
+-- | Pattern constructor for 'Timeout' in nanoseconds.
 pattern Nanoseconds :: CULong -> Timeout
 pattern Nanoseconds n = D.Nanoseconds n
 
+-- | Immediate (non-blocking) timeout value.
 pattern Immediate :: Timeout
 pattern Immediate = D.Immediate
 
+-- | Infinite (blocking) timeout value.
 pattern Infinite :: Timeout
 pattern Infinite = D.Infinite
 
+-- | Active line logical state (high/active).
 pattern Active :: Value
 pattern Active = D.LineActive
 
+-- | Inactive line logical state (low/inactive).
 pattern Inactive :: Value
 pattern Inactive = D.LineInactive
 
+-- | Error line state.
 pattern Error :: Value
 pattern Error = D.LineError
 
+-- | Leave direction configuration as is.
 pattern DirAsIs :: Direction
 pattern DirAsIs = D.DirAsIs
 
+-- | Configure line direction as input.
 pattern DirInput :: Direction
 pattern DirInput = D.DirInput
 
+-- | Configure line direction as output.
 pattern DirOutput :: Direction
 pattern DirOutput = D.DirOutput
 
+-- | Disable edge detection.
 pattern EdgeNone :: Edge
 pattern EdgeNone = D.EdgeNone
 
+-- | Detect rising edge transitions.
 pattern EdgeRising :: Edge
 pattern EdgeRising = D.EdgeRising
 
+-- | Detect falling edge transitions.
 pattern EdgeFalling :: Edge
 pattern EdgeFalling = D.EdgeFalling
 
+-- | Detect both rising and falling edge transitions.
 pattern EdgeBoth :: Edge
 pattern EdgeBoth = D.EdgeBoth
 
+-- | Leave bias configuration as is.
 pattern BiasAsIs :: Bias
 pattern BiasAsIs = D.BiasAsIs
 
+-- | Unknown electrical bias.
 pattern BiasUnknown :: Bias
 pattern BiasUnknown = D.BiasUnknown
 
+-- | Disable electrical bias (floating).
 pattern BiasDisabled :: Bias
 pattern BiasDisabled = D.BiasDisabled
 
+-- | Enable internal pull-up resistor.
 pattern BiasPullUp :: Bias
 pattern BiasPullUp = D.BiasPullUp
 
+-- | Enable internal pull-down resistor.
 pattern BiasPullDown :: Bias
 pattern BiasPullDown = D.BiasPullDown
 
+-- | Push-pull drive mode.
 pattern PushPull :: Drive
 pattern PushPull = D.PushPull
 
+-- | Open-drain drive mode.
 pattern OpenDrain :: Drive
 pattern OpenDrain = D.OpenDrain
 
+-- | Open-source drive mode.
 pattern OpenSource :: Drive
 pattern OpenSource = D.OpenSource
 
+-- | Monotonic clock source for event timestamps.
 pattern Monotonic :: Clock
 pattern Monotonic = D.Monotonic
 
+-- | Realtime clock source for event timestamps.
 pattern Realtime :: Clock
 pattern Realtime = D.Realtime
 
+-- | Hardware clock source for event timestamps.
 pattern Hardware :: Clock
 pattern Hardware = D.Hardware
 
+-- | Rising edge event type.
 pattern Rising :: EdgeEventType
 pattern Rising = D.Rising
 
+-- | Falling edge event type.
 pattern Falling :: EdgeEventType
 pattern Falling = D.Falling
 
+-- | Line requested info event type.
 pattern LineRequested :: InfoEventType
 pattern LineRequested = D.LineRequested
 
+-- | Line released info event type.
 pattern LineReleased :: InfoEventType
 pattern LineReleased = D.LineReleased
 
+-- | Line configuration changed info event type.
 pattern LineConfigChanged :: InfoEventType
 pattern LineConfigChanged = D.LineConfigChanged
