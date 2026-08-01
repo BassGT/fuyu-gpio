@@ -113,7 +113,7 @@ This library is distributed under the **LGPL-2.1-or-later** license.
 
 - **Author**: BassGT
 - **Maintainer**: `springtrap9397@gmail.com`
-- **Repository**: [https://github.com/BassGT/fuyu-gpio-direct](https://github.com/BassGT/fuyu-gpio-direct)
+
 
 
 
