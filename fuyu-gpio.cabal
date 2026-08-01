@@ -10,7 +10,8 @@ maintainer:         springtrap9397@gmail.com
 -- copyright:
 category:           System
 build-type:         Simple
-extra-doc-files:    CHANGELOG.md
+extra-doc-files:    README.md
+                    CHANGELOG.md
 
 source-repository head
     type:     git
