@@ -20,10 +20,7 @@ module Fuyu.GPIO.Types
   , Capacity
   , userBufferCapacity
   , getCapacity
-  , pattern EventBufferCapacity
   , KernelBufferSize
-  , kernelBufferSize
-  , getKernelBufferSize
   , Timeout
   , pattern Nanoseconds
   , pattern Immediate
@@ -178,23 +175,9 @@ userBufferCapacity n
 getCapacity :: Capacity -> Word
 getCapacity (Capacity n) = n
 
--- | Pattern constructor for 'Capacity'.
-pattern EventBufferCapacity :: Word -> Capacity
-pattern EventBufferCapacity s = Capacity s
-
 -- | Size of the kernel-level event ring-buffer (in number of events).
 -- Pass 0 to use the kernel default size (64).
-newtype KernelBufferSize = KernelBufferSize Word
-  deriving (Eq, Ord, Show, Read)
-
--- | Smart constructor for 'KernelBufferSize'.
--- Pass 0 to use the kernel default size (64).
-kernelBufferSize :: Word -> KernelBufferSize
-kernelBufferSize n = KernelBufferSize n
-
--- | Extract the numeric size value from a 'KernelBufferSize' handle.
-getKernelBufferSize :: KernelBufferSize -> Word
-getKernelBufferSize (KernelBufferSize n) = n
+type KernelBufferSize = Word
 
 -- | Pattern constructor for 'Timeout' in nanoseconds.
 pattern Nanoseconds :: CULong -> Timeout

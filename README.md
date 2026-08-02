@@ -9,6 +9,8 @@ Built on top of [`fuyu-gpio-direct`](https://github.com/BassGT/fuyu-gpio-direct)
 ## ⚡ Features
 
 - **Safe Resource Brackets**: Automatic cleanup of chip handles, settings, line configurations, and requests using `withChip`, `withSettings`, `withConfig`, and `withRequest`.
+- **Double-Safe Event Handling**: Event waiting and reading secured by `ReadyRequest` tokens, returning guaranteed `NonEmpty EdgeEvent` lists.
+- **Smart Buffer Management**: Validated user-space event buffer allocation via `userBufferCapacity`.
 - **Zero-Copy Vector I/O**: High-performance batch line reading and writing using `Data.Vector.Storable`.
 - **Structured Metadata**: Clean, qualified metadata accessors via `Fuyu.GPIO.Chip.Info` and `Fuyu.GPIO.Line.Info`.
 - **Full FFI Symmetry**: Manual lifecycle submodules (`.Unsafe`) available for custom monad stacks or manual allocation.
@@ -87,7 +89,15 @@ Once inside the container shell, build the library and executables using Cabal:
 
 ```bash
 cabal update
+
+# Build only the library
+cabal build lib:fuyu-gpio
+
+# Build library and all examples
 cabal build
+
+# Run a specific example directly
+cabal run exe:01-blink
 ```
 
 ---

@@ -21,7 +21,6 @@ module Fuyu.GPIO.EdgeEvent
   , Capacity
   , userBufferCapacity
   , getCapacity
-  , pattern EventBufferCapacity
   , Event
   , Timeout
   , pattern Nanoseconds

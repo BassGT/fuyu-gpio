@@ -12,7 +12,6 @@ module Fuyu.GPIO.EdgeEvent.Unsafe
   , Capacity
   , userBufferCapacity
   , getCapacity
-  , pattern EventBufferCapacity
 
     -- * Unsafe Manual Resource Allocation
   , newEventBuffer
