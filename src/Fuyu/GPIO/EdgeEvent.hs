@@ -19,9 +19,9 @@ module Fuyu.GPIO.EdgeEvent
     -- * Buffer & Event Types
   , Buffer
   , Capacity
+  , userBufferCapacity
+  , getCapacity
   , pattern EventBufferCapacity
-  , BufferIndex
-  , pattern BufferIndex
   , Event
   , Timeout
   , pattern Nanoseconds
@@ -73,15 +73,15 @@ withEventBuffer :: Capacity -> (Buffer -> IO a) -> IO a
 withEventBuffer capacity = bracket (newEventBuffer capacity) freeEventBuffer
 
 -- | Get the capacity of an event buffer.
-eventBufferCapacity :: Buffer -> IO Word
-eventBufferCapacity = D.eventBufferCapacity
+eventBufferCapacity :: Buffer -> IO Capacity
+eventBufferCapacity buf = userBufferCapacity <$> D.eventBufferCapacity buf
 
 -- | Get the number of events currently stored in an event buffer.
 eventBufferNumEvents :: Buffer -> IO Word
 eventBufferNumEvents = D.eventBufferNumEvents
 
 -- | Get a specific edge event from the buffer by index.
-eventBufferGetEvent :: Buffer -> D.BufferIndex -> IO Event
+eventBufferGetEvent :: Buffer -> Word -> IO Event
 eventBufferGetEvent buf idx = unwrapOrThrow ReadEdgeEventsFailed (D.eventBufferGetEvent buf idx)
 
 -- | Wait for edge events to occur on requested lines until the specified timeout.
@@ -119,7 +119,7 @@ withRawEdgeEvents :: ReadyRequest -> Buffer -> (Event -> IO a) -> IO (NonEmpty a
 withRawEdgeEvents readyReq buf action = do
   count <- readEdgeEventsRaw readyReq buf
   results <- forM [0 .. count - 1] $ \idx -> do
-    ev <- eventBufferGetEvent buf (BufferIndex (fromIntegral idx))
+    ev <- eventBufferGetEvent buf (fromIntegral idx)
     action ev
   case NE.nonEmpty results of
     Just ne -> pure ne

@@ -10,6 +10,8 @@ module Fuyu.GPIO.EdgeEvent.Unsafe
   ( -- * Types
     Buffer
   , Capacity
+  , userBufferCapacity
+  , getCapacity
   , pattern EventBufferCapacity
 
     -- * Unsafe Manual Resource Allocation
@@ -24,7 +26,7 @@ import Fuyu.GPIO.Types
 -- | Allocate an edge event buffer of the specified capacity.
 -- Must be manually freed with 'freeEventBuffer'.
 newEventBuffer :: Capacity -> IO Buffer
-newEventBuffer cap = unwrapOrThrow EventBufferNewFailed (D.eventBufferNew cap)
+newEventBuffer cap = unwrapOrThrow EventBufferNewFailed (D.eventBufferNew (getCapacity cap))
 
 -- | Free an edge event buffer object.
 freeEventBuffer :: Buffer -> IO ()

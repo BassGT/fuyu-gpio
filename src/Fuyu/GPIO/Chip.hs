@@ -44,6 +44,7 @@ module Fuyu.GPIO.Chip
 
 import Control.Exception (bracket)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as BS8
 import System.Posix.Types (Fd)
 import qualified Fuyu.GPIO.Direct as D
 import Fuyu.GPIO.Chip.Info (withChipInfo)
@@ -111,8 +112,8 @@ getInfoEventLineInfo = D.infoEventLineInfo
 --------------------------------------------------------------------------------
 
 -- | Check if the given filesystem path is a valid GPIO chip character device.
-isGPIOChip :: ByteString -> IO Bool
-isGPIOChip = D.isGPIOChip
+isGPIOChip :: FilePath -> IO Bool
+isGPIOChip = D.isGPIOChip . BS8.pack
 
 -- | Retrieve the underlying libgpiod C API version string (e.g. "2.1").
 gpiodAPIVersion :: IO ByteString

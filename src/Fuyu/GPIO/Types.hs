@@ -18,9 +18,12 @@ module Fuyu.GPIO.Types
   , offset
   , pattern Offset
   , Capacity
+  , userBufferCapacity
+  , getCapacity
   , pattern EventBufferCapacity
-  , BufferIndex
-  , pattern BufferIndex
+  , KernelBufferSize
+  , kernelBufferSize
+  , getKernelBufferSize
   , Timeout
   , pattern Nanoseconds
   , pattern Immediate
@@ -81,7 +84,8 @@ module Fuyu.GPIO.Types
   , pattern LineConfigChanged
   ) where
 
-import Foreign.C.Types (CUInt, CULong, CSize)
+import Data.Word (Word32)
+import Foreign.C.Types (CUInt, CULong)
 import qualified Fuyu.GPIO.Direct as D
 
 -- | Alias for 'D.Chip'
@@ -105,10 +109,6 @@ type Event         = D.RawEdgeEvent
 
 -- | Alias for 'D.LineOffset'
 type Offset        = D.LineOffset
--- | Alias for 'D.EventBufferCapacity'
-type Capacity      = D.EventBufferCapacity
--- | Alias for 'D.BufferIndex'
-type BufferIndex   = D.BufferIndex
 -- | Alias for 'D.TimeoutNs'
 type Timeout       = D.TimeoutNs
 -- | Alias for 'D.TimestampNs'
@@ -132,9 +132,9 @@ type InfoEvent     = D.InfoEvent
 -- | Alias for 'D.InfoEventType'
 type InfoEventType = D.InfoEventType
 
--- | Helper function to construct an 'Offset' from any integral number (e.g. 'offset 17').
+-- | Helper function to construct an 'Offset' from a 32-bit unsigned integer (e.g. 'offset 17').
 {-# INLINE offset #-}
-offset :: Integral a => a -> Offset
+offset :: Word32 -> Offset
 offset n = D.LineOffset (fromIntegral n)
 
 -- | Security token wrapping a 'Request' that has been confirmed ready by 'Fuyu.GPIO.EdgeEvent.waitEdgeEvents'.
@@ -162,13 +162,39 @@ data EdgeEvent = EdgeEvent
 pattern Offset :: CUInt -> Offset 
 pattern Offset n = D.LineOffset n
 
--- | Pattern constructor for 'Capacity'.
-pattern EventBufferCapacity :: CSize -> Capacity
-pattern EventBufferCapacity s = D.EventBufferCapacity s
+-- | Capacity for the user-space edge event buffer (in number of events).
+newtype Capacity = Capacity Word
+  deriving (Eq, Ord, Show, Read)
 
--- | Pattern constructor for 'BufferIndex'.
-pattern BufferIndex :: CULong -> BufferIndex
-pattern BufferIndex i = D.BufferIndex i
+-- | Smart constructor for user-space event buffer 'Capacity'.
+-- Automatically clamps capacity between 1 and 1024 (where 0 defaults to 64 per libgpiod specifications).
+userBufferCapacity :: Word -> Capacity
+userBufferCapacity n
+  | n == 0    = Capacity 64
+  | n > 1024  = Capacity 1024
+  | otherwise = Capacity n
+
+-- | Extract the numeric capacity value from a 'Capacity' handle.
+getCapacity :: Capacity -> Word
+getCapacity (Capacity n) = n
+
+-- | Pattern constructor for 'Capacity'.
+pattern EventBufferCapacity :: Word -> Capacity
+pattern EventBufferCapacity s = Capacity s
+
+-- | Size of the kernel-level event ring-buffer (in number of events).
+-- Pass 0 to use the kernel default size (64).
+newtype KernelBufferSize = KernelBufferSize Word
+  deriving (Eq, Ord, Show, Read)
+
+-- | Smart constructor for 'KernelBufferSize'.
+-- Pass 0 to use the kernel default size (64).
+kernelBufferSize :: Word -> KernelBufferSize
+kernelBufferSize n = KernelBufferSize n
+
+-- | Extract the numeric size value from a 'KernelBufferSize' handle.
+getKernelBufferSize :: KernelBufferSize -> Word
+getKernelBufferSize (KernelBufferSize n) = n
 
 -- | Pattern constructor for 'Timeout' in nanoseconds.
 pattern Nanoseconds :: CULong -> Timeout

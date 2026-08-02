@@ -8,6 +8,9 @@
 -- Managed configuration options (consumer name, kernel event buffer size) for line requests.
 module Fuyu.GPIO.RequestConfig
   ( RequestConfig
+  , KernelBufferSize
+  , kernelBufferSize
+  , getKernelBufferSize
   , withRequestConfig
   , setConsumer
   , getConsumer
@@ -33,10 +36,10 @@ setConsumer = D.requestConfigSetConsumer
 getConsumer :: RequestConfig -> IO ByteString
 getConsumer = D.requestConfigConsumer
 
--- | Set event buffer size for request config.
-setEventBufferSize :: RequestConfig -> Word -> IO ()
-setEventBufferSize = D.requestConfigSetEventBufferSize
+-- | Set kernel event buffer size for request config.
+setEventBufferSize :: RequestConfig -> KernelBufferSize -> IO ()
+setEventBufferSize reqConf sz = D.requestConfigSetEventBufferSize reqConf (getKernelBufferSize sz)
 
--- | Get event buffer size from request config.
-getEventBufferSize :: RequestConfig -> IO Word
-getEventBufferSize = D.requestConfigEventBufferSize
+-- | Get kernel event buffer size from request config.
+getEventBufferSize :: RequestConfig -> IO KernelBufferSize
+getEventBufferSize reqConf = kernelBufferSize <$> D.requestConfigEventBufferSize reqConf
