@@ -33,7 +33,7 @@ module Fuyu.GPIO.Types
   , Value
   , pattern Active
   , pattern Inactive
-  , pattern Error
+  , pattern ValueError
 
     -- * Line Direction & Patterns
   , Direction
@@ -200,8 +200,8 @@ pattern Inactive :: Value
 pattern Inactive = D.LineInactive
 
 -- | Error line state.
-pattern Error :: Value
-pattern Error = D.LineError
+pattern ValueError :: Value
+pattern ValueError = D.LineError
 
 -- | Leave direction configuration as is.
 pattern DirAsIs :: Direction

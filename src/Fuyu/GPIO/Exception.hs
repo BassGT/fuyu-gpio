@@ -37,6 +37,7 @@ data GpioException
   | RawEdgeEventCopyFailed Errno
   | LineInfoCopyFailed Errno
   | CustomGpioError String Errno
+  | InvalidArgument String
   deriving (Exception)
 
 instance Eq GpioException where
@@ -59,6 +60,7 @@ instance Eq GpioException where
   RawEdgeEventCopyFailed e1 == RawEdgeEventCopyFailed e2 = e1 == e2
   LineInfoCopyFailed e1 == LineInfoCopyFailed e2 = e1 == e2
   CustomGpioError s1 e1 == CustomGpioError s2 e2 = s1 == s2 && e1 == e2
+  InvalidArgument msg1 == InvalidArgument msg2 = msg1 == msg2
   _ == _ = False
 
 instance Show GpioException where
@@ -81,6 +83,7 @@ instance Show GpioException where
   show (RawEdgeEventCopyFailed (Errno e)) = "RawEdgeEventCopyFailed (errno " ++ show e ++ ")"
   show (LineInfoCopyFailed (Errno e)) = "LineInfoCopyFailed (errno " ++ show e ++ ")"
   show (CustomGpioError msg (Errno e)) = "CustomGpioError '" ++ msg ++ "' (errno " ++ show e ++ ")"
+  show (InvalidArgument msg) = "InvalidArgument: " ++ msg
 
 -- | Helper to unwrap an 'Either Errno a' from low-level FFI calls or throw a 'GpioException'.
 unwrapOrThrow :: (Errno -> GpioException) -> IO (Either Errno a) -> IO a

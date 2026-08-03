@@ -20,7 +20,7 @@ module Fuyu.GPIO.Line
   , Value
   , pattern Active
   , pattern Inactive
-  , pattern Error
+  , pattern ValueError
   , Direction
   , pattern DirAsIs
   , pattern DirInput
@@ -93,7 +93,7 @@ module Fuyu.GPIO.Line
   , reconfigureLines
   ) where
 
-import Control.Exception (bracket)
+import Control.Exception (bracket, throwIO)
 import Data.ByteString (ByteString)
 import qualified Data.Vector.Storable as V
 import System.Posix.Types (Fd)
@@ -140,7 +140,8 @@ getEdgeDetection = D.lineSettingsEdgeDetection
 
 -- | Set electrical bias in the settings.
 setBias :: Settings -> Bias -> IO ()
-setBias set bias = unwrapOrThrow LineSettingsSetFailed (D.lineSettingsSetBias set bias)
+setBias _ BiasUnknown = throwIO $ InvalidArgument "setBias: BiasUnknown is a read-only state and cannot be set as a bias configuration."
+setBias set bias        = unwrapOrThrow LineSettingsSetFailed (D.lineSettingsSetBias set bias)
 
 -- | Get electrical bias from the settings.
 getBias :: Settings -> IO Bias
@@ -180,6 +181,7 @@ getDebouncePeriodUs = D.lineSettingsDebouncePeriodUs
 
 -- | Set default output value in the settings.
 setOutputValue :: Settings -> Value -> IO ()
+setOutputValue _ ValueError = throwIO $ InvalidArgument "setOutputValue: ValueError pattern is a read-only error state and cannot be set as an output value."
 setOutputValue set val = unwrapOrThrow LineSettingsSetFailed (D.lineSettingsSetOutputValue set val)
 
 -- | Get default output value from the settings.
@@ -204,7 +206,9 @@ getSettings config offset' = unwrapOrThrow LineConfigNewFailed (D.lineConfigLine
 
 -- | Set output values for lines in configuration.
 setOutputValues :: Config -> V.Vector Value -> IO ()
-setOutputValues config values = unwrapOrThrow LineConfigNewFailed (D.lineConfigSetOutputValues config values)
+setOutputValues config values
+  | V.elem ValueError values = throwIO $ InvalidArgument "setOutputValues: Vector contains ValueError pattern, which cannot be set as an output value."
+  | otherwise                = unwrapOrThrow LineConfigNewFailed (D.lineConfigSetOutputValues config values)
 
 -- | Get the number of configured offsets in the line configuration.
 getNumOffsets :: Config -> IO Word
@@ -236,15 +240,20 @@ getValuesSubset req offsets = unwrapOrThrow LineValueReadFailed (D.lineRequestSu
 
 -- | Set the logical value of a requested GPIO line at the given offset.
 setValue :: Request -> Offset -> Value -> IO ()
+setValue _ _ ValueError  = throwIO $ InvalidArgument "setValue: ValueError pattern is a read-only error state and cannot be written to a GPIO line."
 setValue req offset' val = unwrapOrThrow LineValueWriteFailed (D.lineRequestSetValue req offset' val)
 
 -- | Set the logical values of all requested lines from a Storable 'V.Vector'.
 setValues :: Request -> V.Vector Value -> IO ()
-setValues req vals = unwrapOrThrow LineValueWriteFailed (D.lineRequestSetValues req vals)
+setValues req vals
+  | V.elem ValueError vals = throwIO $ InvalidArgument "setValues: Vector contains ValueError pattern, which cannot be written to GPIO lines."
+  | otherwise              = unwrapOrThrow LineValueWriteFailed (D.lineRequestSetValues req vals)
 
 -- | Set the logical values of a subset of requested lines from vectors of offsets and values.
 setValuesSubset :: Request -> V.Vector Offset -> V.Vector Value -> IO ()
-setValuesSubset req offsets vals = unwrapOrThrow LineValueWriteFailed (D.lineRequestSetValuesSubset req offsets vals)
+setValuesSubset req offsets vals
+  | V.elem ValueError vals = throwIO $ InvalidArgument "setValuesSubset: Vector contains ValueError pattern, which cannot be written to GPIO lines."
+  | otherwise              = unwrapOrThrow LineValueWriteFailed (D.lineRequestSetValuesSubset req offsets vals)
 
 --------------------------------------------------------------------------------
 -- Line Request Operations & Metadata
