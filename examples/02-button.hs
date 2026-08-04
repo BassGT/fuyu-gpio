@@ -1,12 +1,13 @@
 -- In this example we will learn how to handle a button input using libgpiod line settings.
 module Main where
+
 import Fuyu.GPIO.Chip (withChip)
 import Fuyu.GPIO.Line as Line 
 import Fuyu.GPIO.EdgeEvent as Event
+import Fuyu.GPIO.Exception (withGpioApp)
 
 import Data.Vector.Storable (singleton)
 import Control.Monad (forever)
-import Control.Exception (catch, IOException)
 
 chipPath :: FilePath
 chipPath = "/dev/gpiochip0" 
@@ -42,14 +43,9 @@ buttonWorker req buf = do
       events <- Event.readEdgeEvents readyReq buf -- Read events from user buffer (configured with capacity 1)
       print events    
     TimeoutResult -> putStrLn "Timeout: No event was read" -- Printed after the 5-second wait timeout expires
-  
+
 main :: IO ()
-main = do
-  -- Catch exception to exit cleanly on Ctrl+C
-  runApp `catch` handleExit 
-  where
-    handleExit :: IOException -> IO ()
-    handleExit _ = putStrLn "\nLoop terminated successfully!"
+main = withGpioApp runApp
 
 runApp :: IO ()
 runApp = do
