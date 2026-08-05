@@ -21,6 +21,7 @@ module Fuyu.GPIO.Chip.Unsafe
 
 import qualified Data.ByteString.Char8 as BS8
 import qualified Fuyu.GPIO.Direct as D
+import Fuyu.GPIO.Chip.Watch.Unsafe (readInfoEvent, freeInfoEvent)
 import Fuyu.GPIO.Exception
 import Fuyu.GPIO.Types
 
@@ -33,11 +34,3 @@ openChip path = unwrapOrThrow (ChipOpenFailed path) (D.chipOpen (BS8.pack path))
 closeChip :: Chip -> IO ()
 closeChip = D.chipClose
 
--- | Read a line info event from a chip.
--- Must be manually freed using 'freeInfoEvent'.
-readInfoEvent :: Chip -> IO InfoEvent
-readInfoEvent chip = unwrapOrThrow ReadInfoEventFailed (D.chipReadInfoEvent chip)
-
--- | Free an info event object.
-freeInfoEvent :: InfoEvent -> IO ()
-freeInfoEvent = D.infoEventFree

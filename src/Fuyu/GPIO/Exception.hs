@@ -1,19 +1,22 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- |
 -- Module      : Fuyu.GPIO.Exception
--- Description : Exception types for fuyu-gpio operations.
+-- Description : Exception types and high-level application handler for fuyu-gpio operations.
 -- Maintainer  : BassGT
 -- Stability   : experimental
 -- Portability : POSIX
 --
--- High-level exception type 'GpioException' thrown by fuyu-gpio operations.
+-- High-level exception type 'GpioException' thrown by fuyu-gpio operations,
+-- and managed application runner 'withGpioApp' for graceful signal handling.
 module Fuyu.GPIO.Exception
   ( GpioException(..)
   , unwrapOrThrow
+  , withGpioApp
   ) where
 
-import Control.Exception (Exception, throwIO)
+import Control.Exception (Exception, SomeException, catch, fromException, throwIO, AsyncException(UserInterrupt))
 import Foreign.C.Error (Errno(..))
 
 -- | High-level exceptions thrown by fuyu-gpio operations.
@@ -92,3 +95,21 @@ unwrapOrThrow mkExc action = do
   case res of
     Left errno -> throwIO (mkExc errno)
     Right val  -> pure val
+
+-- | High-level managed application runner.
+-- Automatically handles 'Ctrl+C' ('UserInterrupt'), interrupted system calls ('EINTR' / 'WaitEdgeEventsFailed'),
+-- and prints formatted 'GpioException' messages cleanly without uncaught backtraces.
+withGpioApp :: IO a -> IO ()
+withGpioApp action = (action >> pure ()) `catch` handleAppException
+  where
+    handleAppException :: SomeException -> IO ()
+    handleAppException exc
+      | isUserInterrupt exc = putStrLn "\nLoop terminated successfully!"
+      | Just (WaitEdgeEventsFailed (Errno 4)) <- fromException exc = putStrLn "\nLoop terminated successfully!"
+      | Just (gpioErr :: GpioException) <- fromException exc = putStrLn $ "\n[GPIO Exception]: " ++ show gpioErr
+      | otherwise = throwIO exc
+
+    isUserInterrupt :: SomeException -> Bool
+    isUserInterrupt e = case fromException e of
+      Just UserInterrupt -> True
+      _                  -> False
