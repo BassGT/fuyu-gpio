@@ -2,36 +2,40 @@
 -- using concurrent threads and an MVar to dynamically control blinking speed.
 module Main where
 
+-- High-level resource brackets & exception handling
 import Fuyu.GPIO.Chip (withChip)
-import Fuyu.GPIO.Line as Line 
-import Fuyu.GPIO.EdgeEvent as Event
 import Fuyu.GPIO.Exception (withGpioApp)
+import Fuyu.GPIO.Line (withSettings, withConfig, withRequest)
+import qualified Fuyu.GPIO.Line as Line
+import Fuyu.GPIO.EdgeEvent (withEventBuffer)
+import qualified Fuyu.GPIO.EdgeEvent as Event
 
-import Data.Vector.Storable (singleton)
-import Control.Monad (forever)
-import Control.Concurrent (threadDelay, forkIO, killThread, MVar, newMVar, readMVar, modifyMVar_)
+-- Base & third-party libraries
+import Control.Concurrent (MVar, forkIO, killThread, modifyMVar_, newMVar, readMVar, threadDelay)
 import Control.Exception (finally)
-import System.IO (hSetBuffering, stdout, BufferMode(NoBuffering))
+import Control.Monad (forever)
+import Data.Vector.Storable (singleton)
+import System.IO (BufferMode(NoBuffering), hSetBuffering, stdout)
 
 chipPath :: FilePath
 chipPath = "/dev/gpiochip0"
 
 -- This constant defines the maximum duration 'waitEdgeEvents' will wait for an event.
 -- A short 100ms timeout yields execution back to the RTS so worker threads run smoothly.
-waitTimeoutNs :: Timeout
-waitTimeoutNs = Nanoseconds 100000000 
+waitTimeoutNs :: Event.Timeout
+waitTimeoutNs = Event.Nanoseconds 100000000 
 
 -- Do not confuse this with kernel ring buffer capacity. 'Capacity' refers to the user-space event buffer.
 -- It is clamped between 1 and 1024, and must be constructed via 'userBufferCapacity'
 -- (passing 0 defaults to 64).
-bufferCapacity :: Capacity
-bufferCapacity = userBufferCapacity 1
+bufferCapacity :: Event.Capacity
+bufferCapacity = Event.userBufferCapacity 1
 
-ledOffset :: Offset
-ledOffset = offset 256 
+ledOffset :: Line.Offset
+ledOffset = Line.offset 256 
 
-buttonOffset :: Offset
-buttonOffset = offset 271
+buttonOffset :: Line.Offset
+buttonOffset = Line.offset 271
 
 type Microseconds = Int
 
@@ -53,19 +57,19 @@ nextSpeed HalfSec    = FifthOfSec
 nextSpeed FifthOfSec = TenthOfSec
 nextSpeed TenthOfSec = OneSec
 
-ledSettings :: Settings -> IO ()
-ledSettings stgs = Line.setDirection stgs DirOutput
+ledSettings :: Line.Settings -> IO ()
+ledSettings stgs = Line.setDirection stgs Line.DirOutput
 
-buttonSettings :: Settings -> IO ()
+buttonSettings :: Line.Settings -> IO ()
 buttonSettings stgs = do
-  Line.setDirection stgs DirInput     -- Configure line as input mode
-  Line.setBias stgs BiasPullUp        -- Enable internal pull-up resistor
-                                      -- (the physical button connects GND when pressed, driving the line to Inactive)
-  Line.setDebouncePeriodUs stgs 80000 -- 80ms native kernel debounce period to filter out mechanical contact bounce without threadDelay
-  Line.setEdgeDetection stgs EdgeFalling -- Listen for Falling edge transitions (button press to GND)
+  Line.setDirection stgs Line.DirInput     -- Configure line as input mode
+  Line.setBias stgs Line.BiasPullUp        -- Enable internal pull-up resistor
+                                           -- (the physical button connects GND when pressed, driving the line to Inactive)
+  Line.setDebouncePeriodUs stgs 80000      -- 80ms native kernel debounce period to filter out mechanical contact bounce without threadDelay
+  Line.setEdgeDetection stgs Line.EdgeFalling -- Listen for Falling edge transitions (button press to GND)
 
 -- Worker thread A: Blinks the LED continuously using the delay duration read from the MVar
-ledWorker :: Request -> MVar LooptimeState -> IO ()
+ledWorker :: Line.Request -> MVar LooptimeState -> IO ()
 ledWorker req speedMVar = forever $ do
   lts <- readMVar speedMVar
   let delayUs = stateToMicroseconds lts
@@ -75,14 +79,14 @@ ledWorker req speedMVar = forever $ do
   threadDelay delayUs
 
 -- Worker thread B: Listens for button edge events and cycles the blinking speed state
-buttonWorker :: Request -> Buffer -> MVar LooptimeState -> IO ()
+buttonWorker :: Line.Request -> Event.Buffer -> MVar LooptimeState -> IO ()
 buttonWorker req buf speedMVar = do
   res <- Event.waitEdgeEvents req waitTimeoutNs
   case res of
-    EventReady readyReq -> do
+    Event.EventReady readyReq -> do
       _events <- Event.readEdgeEvents readyReq buf -- Read events from user buffer (configured with capacity 1)
       modifyMVar_ speedMVar (return . nextSpeed)
-    TimeoutResult -> threadDelay 20000 -- 20ms pause to yield file descriptor to LED worker thread
+    Event.TimeoutResult -> threadDelay 20000 -- 20ms pause to yield file descriptor to LED worker thread
 
 main :: IO ()
 main = withGpioApp runApp

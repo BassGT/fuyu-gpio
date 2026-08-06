@@ -1,13 +1,15 @@
 -- To blink LED 10 times we could follow the next steps
 module Main where
 
+-- High-level resource brackets & utility functions
 import Fuyu.GPIO.Chip (withChip, isGPIOChip)
 import Fuyu.GPIO.Line (withSettings, withConfig, withRequest)
 import qualified Fuyu.GPIO.Line as Line
 
+-- Base & third-party libraries
+import Control.Concurrent (threadDelay)
 import Control.Monad (replicateM_)
 import Data.Vector.Storable (singleton)
-import Control.Concurrent (threadDelay)
 
 -- We could check if this file is a GPIO Chip with 'isGPIOChip' function
 chipPath :: FilePath
