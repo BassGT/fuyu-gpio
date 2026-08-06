@@ -15,13 +15,15 @@ module Fuyu.GPIO.Chip.Unsafe
     -- * Unsafe Manual Resource Allocation
   , openChip
   , closeChip
+  , watchLineInfo
+  , unwatchLineInfo
   , readInfoEvent
   , freeInfoEvent
   ) where
 
 import qualified Data.ByteString.Char8 as BS8
 import qualified Fuyu.GPIO.Direct as D
-import Fuyu.GPIO.Chip.Watch.Unsafe (readInfoEvent, freeInfoEvent)
+import Fuyu.GPIO.Chip.Watch.Unsafe (watchLineInfo, unwatchLineInfo, readInfoEvent, freeInfoEvent)
 import Fuyu.GPIO.Exception
 import Fuyu.GPIO.Types
 

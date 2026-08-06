@@ -41,8 +41,6 @@ module Fuyu.GPIO.Chip.Watch
   , withInfoEvent
 
     -- * Line Watch Operations
-  , watchLineInfo
-  , unwatchLineInfo
   , waitInfoEvent
 
     -- * InfoEvent Accessors
@@ -53,7 +51,7 @@ module Fuyu.GPIO.Chip.Watch
 
 import Control.Exception (bracket)
 import qualified Fuyu.GPIO.Direct as D
-import Fuyu.GPIO.Chip.Watch.Unsafe (readInfoEvent, freeInfoEvent)
+import Fuyu.GPIO.Chip.Watch.Unsafe (watchLineInfo, unwatchLineInfo, readInfoEvent, freeInfoEvent)
 import Fuyu.GPIO.Exception
 import Fuyu.GPIO.Types
 
@@ -63,15 +61,6 @@ import Fuyu.GPIO.Types
 -- Passes the initial 'LineInfo' snapshot of the line to the callback.
 withWatchLineInfo :: Chip -> Offset -> (LineInfo -> IO a) -> IO a
 withWatchLineInfo chip offset' = bracket (watchLineInfo chip offset') (\_ -> unwatchLineInfo chip offset')
-
--- | Start watching a line for status change events (e.g. requested, released, reconfigured).
--- Returns the initial 'LineInfo' snapshot of the line.
-watchLineInfo :: Chip -> Offset -> IO LineInfo
-watchLineInfo chip offset' = unwrapOrThrow LineInfoFailed (D.chipWatchLineInfo chip offset')
-
--- | Stop watching a line for status change events.
-unwatchLineInfo :: Chip -> Offset -> IO ()
-unwatchLineInfo chip offset' = unwrapOrThrow LineInfoFailed (D.chipUnwatchLineInfo chip offset')
 
 -- | Wait for status change info events on any of the watched lines on the chip until the specified timeout.
 -- Throws 'WaitInfoEventFailed' on error.
