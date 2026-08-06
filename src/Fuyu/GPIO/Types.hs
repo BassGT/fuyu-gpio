@@ -12,6 +12,8 @@ module Fuyu.GPIO.Types
   , Event
   , ReadyRequest(..)
   , readyToRequest
+  , ReadyChip(..)
+  , readyToChip
 
     -- * Units & Index Types
   , Offset
@@ -76,9 +78,9 @@ module Fuyu.GPIO.Types
     -- * Line Info Event Types & Patterns
   , InfoEvent
   , InfoEventType
-  , pattern LineRequested
-  , pattern LineReleased
-  , pattern LineConfigChanged
+  , pattern Requested
+  , pattern Released
+  , pattern ConfigChanged
   ) where
 
 import Data.Word (Word32)
@@ -95,7 +97,7 @@ type LineInfo      = D.LineInfo
 type Settings      = D.LineSettings
 -- | Alias for 'D.LineConfig'
 type Config        = D.LineConfig
--- | Alias for 'D.LineRequest'
+-- | Alias for 'D.Request'
 type Request       = D.LineRequest
 -- | Alias for 'D.RequestConfig'
 type RequestConfig = D.RequestConfig
@@ -142,9 +144,17 @@ newtype ReadyRequest = ReadyRequest Request
 readyToRequest :: ReadyRequest -> Request
 readyToRequest (ReadyRequest req) = req
 
--- | Result of waiting for edge events on a line request.
-data WaitResult
-  = EventReady ReadyRequest
+-- | Security token wrapping a 'Chip' that has been confirmed ready by 'Fuyu.GPIO.Chip.Watch.waitInfoEvent'.
+newtype ReadyChip = ReadyChip Chip
+  deriving (Eq, Show)
+
+-- | Extract the underlying 'Chip' from a 'ReadyChip'.
+readyToChip :: ReadyChip -> Chip
+readyToChip (ReadyChip chip) = chip
+
+-- | Result of waiting for events on a line request or watched chip handle.
+data WaitResult a
+  = EventReady !a
   | TimeoutResult
   deriving (Eq, Show)
 
@@ -284,13 +294,13 @@ pattern Falling :: EdgeEventType
 pattern Falling = D.Falling
 
 -- | Line requested info event type.
-pattern LineRequested :: InfoEventType
-pattern LineRequested = D.LineRequested
+pattern Requested :: InfoEventType
+pattern Requested = D.LineRequested
 
 -- | Line released info event type.
-pattern LineReleased :: InfoEventType
-pattern LineReleased = D.LineReleased
+pattern Released :: InfoEventType
+pattern Released = D.LineReleased
 
 -- | Line configuration changed info event type.
-pattern LineConfigChanged :: InfoEventType
-pattern LineConfigChanged = D.LineConfigChanged
+pattern ConfigChanged :: InfoEventType
+pattern ConfigChanged = D.LineConfigChanged

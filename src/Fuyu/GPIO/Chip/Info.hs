@@ -16,7 +16,6 @@ module Fuyu.GPIO.Chip.Info
     ChipInfo
 
     -- * Managed Resource Allocation
-  , withInfo
   , withChipInfo
 
     -- * Metadata Accessors
@@ -32,12 +31,8 @@ import Fuyu.GPIO.Chip.Info.Unsafe (getChipInfo, freeChipInfo)
 import Fuyu.GPIO.Types
 
 -- | Retrieve information about a GPIO chip and free it automatically afterwards.
-withInfo :: Chip -> (ChipInfo -> IO a) -> IO a
-withInfo chip = bracket (getChipInfo chip) freeChipInfo
-
--- | Alias for 'withInfo'.
 withChipInfo :: Chip -> (ChipInfo -> IO a) -> IO a
-withChipInfo = withInfo
+withChipInfo chip = bracket (getChipInfo chip) freeChipInfo
 
 -- | Get the name of the GPIO chip (e.g. "gpiochip4").
 name :: ChipInfo -> IO ByteString

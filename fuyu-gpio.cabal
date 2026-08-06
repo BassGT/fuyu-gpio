@@ -35,6 +35,8 @@ library
                       Fuyu.GPIO.RequestConfig.Unsafe,
                       Fuyu.GPIO.EdgeEvent,
                       Fuyu.GPIO.EdgeEvent.Unsafe,
+                      Fuyu.GPIO.Chip.Watch,
+                      Fuyu.GPIO.Chip.Watch.Unsafe,
                       Fuyu.GPIO.Exception
 
     other-modules:    Fuyu.GPIO.Types
@@ -56,16 +58,31 @@ flag examples
   default:     False
   manual:      True
 
-executable 01-blink 
-  hs-source-dirs:      examples
-  main-is:             01-blink.hs
-  default-language:    Haskell2010
+common example-config
+    import:           warnings
+    hs-source-dirs:   examples
+    default-language: Haskell2010
+    if !flag(examples)
+        buildable: False
+    else
+        build-depends:
+            base >= 4.18 && < 5,
+            fuyu-gpio,
+            vector
 
-  -- Si el flag está desactivado, ignora este ejecutable por completo
-  if !flag(examples)
-    buildable: False
-  else
-    -- Si el flag está activado, añade las dependencias
-    build-depends:
-        base >= 4.18 && < 5
-      , fuyu-gpio
+executable 01-blink
+    import:           example-config
+    main-is:          01-blink.hs
+    
+executable 02-button 
+    import:           example-config
+    main-is:          02-button.hs
+    
+executable 03-led-and-button
+    import:           example-config
+    main-is:          03-led-and-button.hs
+
+executable 04-line-watch
+    import:           example-config
+    main-is:          04-line-watch.hs
+    ghc-options:      -threaded -rtsopts

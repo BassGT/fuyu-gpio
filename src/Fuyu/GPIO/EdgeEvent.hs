@@ -85,7 +85,7 @@ eventBufferGetEvent buf idx = unwrapOrThrow ReadEdgeEventsFailed (D.eventBufferG
 
 -- | Wait for edge events to occur on requested lines until the specified timeout.
 -- Throws 'WaitEdgeEventsFailed' on error.
-waitEdgeEvents :: Request -> Timeout -> IO WaitResult
+waitEdgeEvents :: Request -> Timeout -> IO (WaitResult ReadyRequest)
 waitEdgeEvents req timeout = do
   res <- unwrapOrThrow WaitEdgeEventsFailed (D.lineRequestWaitEdgeEvents req timeout)
   pure $ case res of

@@ -16,7 +16,6 @@ module Fuyu.GPIO.Line.Info
     LineInfo
 
     -- * Managed Resource Allocation
-  , withInfo
   , withLineInfo
 
     -- * Metadata Accessors
@@ -41,12 +40,8 @@ import Fuyu.GPIO.Line.Info.Unsafe (getLineInfo, freeLineInfo)
 import Fuyu.GPIO.Types hiding (offset)
 
 -- | Retrieve information about a specific line on a chip and free it automatically afterwards.
-withInfo :: Chip -> Offset -> (LineInfo -> IO a) -> IO a
-withInfo chip offset' = bracket (getLineInfo chip offset') freeLineInfo
-
--- | Alias for 'withInfo'.
 withLineInfo :: Chip -> Offset -> (LineInfo -> IO a) -> IO a
-withLineInfo = withInfo
+withLineInfo chip offset' = bracket (getLineInfo chip offset') freeLineInfo
 
 -- | Get the numeric 'Offset' of the line from a 'LineInfo' snapshot.
 offset :: LineInfo -> IO Offset

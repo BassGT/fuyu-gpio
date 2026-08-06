@@ -8,8 +8,10 @@
 -- Manual resource allocation ('readInfoEvent', 'freeInfoEvent')
 -- for applications that cannot use managed bracket functions.
 module Fuyu.GPIO.Chip.Watch.Unsafe
-  ( -- * Types
+  ( -- * Types & Security Token
     Chip
+  , ReadyChip(..)
+  , readyToChip
   , InfoEvent
 
     -- * Unsafe Manual Resource Allocation
@@ -21,10 +23,10 @@ import qualified Fuyu.GPIO.Direct as D
 import Fuyu.GPIO.Exception
 import Fuyu.GPIO.Types
 
--- | Read a line info event from a chip.
+-- | Read a line info event from a chip after 'Fuyu.GPIO.Chip.Watch.waitInfoEvent' confirms it is ready.
 -- Must be manually freed using 'freeInfoEvent'.
-readInfoEvent :: Chip -> IO InfoEvent
-readInfoEvent chip = unwrapOrThrow ReadInfoEventFailed (D.chipReadInfoEvent chip)
+readInfoEvent :: ReadyChip -> IO InfoEvent
+readInfoEvent (ReadyChip chip) = unwrapOrThrow ReadInfoEventFailed (D.chipReadInfoEvent chip)
 
 -- | Free an info event object.
 freeInfoEvent :: InfoEvent -> IO ()

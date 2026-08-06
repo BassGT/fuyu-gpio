@@ -18,15 +18,23 @@
 module Fuyu.GPIO.Chip.Watch
   ( -- * Types & Patterns
     Chip
+  , ReadyChip(..)
+  , readyToChip
+  , WaitResult(..)
   , LineInfo
   , Offset
   , offset
   , pattern Offset
+  , Timeout
+  , pattern Nanoseconds
+  , pattern Immediate
+  , pattern Infinite
+  , Timestamp
   , InfoEvent
   , InfoEventType
-  , pattern LineRequested
-  , pattern LineReleased
-  , pattern LineConfigChanged
+  , pattern Requested
+  , pattern Released
+  , pattern ConfigChanged
 
     -- * Managed Brackets
   , withWatchLineInfo
@@ -65,18 +73,19 @@ watchLineInfo chip offset' = unwrapOrThrow LineInfoFailed (D.chipWatchLineInfo c
 unwatchLineInfo :: Chip -> Offset -> IO ()
 unwatchLineInfo chip offset' = unwrapOrThrow LineInfoFailed (D.chipUnwatchLineInfo chip offset')
 
--- | Wait for status change info events on a watched line.
--- Returns 'True' if an event is ready, or 'False' if the timeout expired.
-waitInfoEvent :: Chip -> Timeout -> IO Bool
+-- | Wait for status change info events on any of the watched lines on the chip until the specified timeout.
+-- Throws 'WaitInfoEventFailed' on error.
+waitInfoEvent :: Chip -> Timeout -> IO (WaitResult ReadyChip)
 waitInfoEvent chip timeout = do
   res <- unwrapOrThrow WaitInfoEventFailed (D.chipWaitInfoEvent chip timeout)
   pure $ case res of
-    D.EventReady -> True
-    D.Timeout    -> False
+    D.EventReady -> EventReady (ReadyChip chip)
+    D.Timeout    -> TimeoutResult
 
--- | Read a status change info event from a chip and automatically free it afterwards.
-withInfoEvent :: Chip -> (InfoEvent -> IO a) -> IO a
-withInfoEvent chip = bracket (readInfoEvent chip) freeInfoEvent
+-- | Read a status change info event from a chip once 'waitInfoEvent' indicates it is ready,
+-- and automatically free it afterwards.
+withInfoEvent :: ReadyChip -> (InfoEvent -> IO a) -> IO a
+withInfoEvent readyChip = bracket (readInfoEvent readyChip) freeInfoEvent
 
 -- | Get the event type of an 'InfoEvent' ('LineRequested', 'LineReleased', 'LineConfigChanged').
 getInfoEventType :: InfoEvent -> IO InfoEventType
