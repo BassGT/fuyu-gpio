@@ -37,7 +37,7 @@ import Control.Exception (bracket)
 import Data.ByteString (ByteString)
 import qualified Fuyu.GPIO.Direct as D
 import Fuyu.GPIO.Line.Info.Unsafe (getLineInfo, freeLineInfo)
-import Fuyu.GPIO.Types hiding (offset)
+import Fuyu.GPIO.Types
 
 -- | Retrieve information about a specific line on a chip and free it automatically afterwards.
 withLineInfo :: Chip -> Offset -> (LineInfo -> IO a) -> IO a

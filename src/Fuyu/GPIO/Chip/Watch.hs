@@ -23,7 +23,6 @@ module Fuyu.GPIO.Chip.Watch
   , WaitResult(..)
   , LineInfo
   , Offset
-  , offset
   , pattern Offset
   , Timeout
   , pattern Nanoseconds

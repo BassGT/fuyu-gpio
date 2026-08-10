@@ -38,9 +38,9 @@ module Fuyu.GPIO.EdgeEvent
 
     -- * Event Buffer Operations (Managed)
   , withEventBuffer
-  , eventBufferCapacity
-  , eventBufferNumEvents
-  , eventBufferGetEvent
+  , getEventBufferCapacity
+  , getEventBufferNumEvents
+  , getEventBufferEvent
 
     -- * Waiting & Reading Events
   , waitEdgeEvents
@@ -72,16 +72,16 @@ withEventBuffer :: Capacity -> (Buffer -> IO a) -> IO a
 withEventBuffer capacity = bracket (newEventBuffer capacity) freeEventBuffer
 
 -- | Get the capacity of an event buffer.
-eventBufferCapacity :: Buffer -> IO Capacity
-eventBufferCapacity buf = userBufferCapacity <$> D.eventBufferCapacity buf
+getEventBufferCapacity :: Buffer -> IO Capacity
+getEventBufferCapacity buf = userBufferCapacity <$> D.eventBufferCapacity buf
 
 -- | Get the number of events currently stored in an event buffer.
-eventBufferNumEvents :: Buffer -> IO Word
-eventBufferNumEvents = D.eventBufferNumEvents
+getEventBufferNumEvents :: Buffer -> IO Word
+getEventBufferNumEvents = D.eventBufferNumEvents
 
 -- | Get a specific edge event from the buffer by index.
-eventBufferGetEvent :: Buffer -> Word -> IO Event
-eventBufferGetEvent buf idx = unwrapOrThrow ReadEdgeEventsFailed (D.eventBufferGetEvent buf idx)
+getEventBufferEvent :: Buffer -> Word -> IO Event
+getEventBufferEvent buf idx = unwrapOrThrow ReadEdgeEventsFailed (D.eventBufferGetEvent buf idx)
 
 -- | Wait for edge events to occur on requested lines until the specified timeout.
 -- Throws 'WaitEdgeEventsFailed' on error.
@@ -118,7 +118,7 @@ withRawEdgeEvents :: ReadyRequest -> Buffer -> (Event -> IO a) -> IO (NonEmpty a
 withRawEdgeEvents readyReq buf action = do
   count <- readEdgeEventsRaw readyReq buf
   results <- forM [0 .. count - 1] $ \idx -> do
-    ev <- eventBufferGetEvent buf (fromIntegral idx)
+    ev <- getEventBufferEvent buf (fromIntegral idx)
     action ev
   case NE.nonEmpty results of
     Just ne -> pure ne

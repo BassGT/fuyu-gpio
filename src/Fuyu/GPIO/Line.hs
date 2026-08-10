@@ -15,7 +15,6 @@ module Fuyu.GPIO.Line
   , Request
   , RequestConfig
   , Offset
-  , offset
   , pattern Offset
   , Value
   , pattern Active

@@ -1,4 +1,5 @@
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE ViewPatterns #-}
 module Fuyu.GPIO.Types
   ( -- * Handles & Opaque Objects
     Chip
@@ -17,7 +18,6 @@ module Fuyu.GPIO.Types
 
     -- * Units & Index Types
   , Offset
-  , offset
   , pattern Offset
   , Capacity
   , userBufferCapacity
@@ -84,7 +84,7 @@ module Fuyu.GPIO.Types
   ) where
 
 import Data.Word (Word32)
-import Foreign.C.Types (CUInt, CULong)
+import Foreign.C.Types (CULong)
 import qualified Fuyu.GPIO.Direct as D
 
 -- | Alias for 'D.Chip'
@@ -131,10 +131,12 @@ type InfoEvent     = D.InfoEvent
 -- | Alias for 'D.InfoEventType'
 type InfoEventType = D.InfoEventType
 
--- | Helper function to construct an 'Offset' from a 32-bit unsigned integer (e.g. 'offset 17').
-{-# INLINE offset #-}
-offset :: Word32 -> Offset
-offset n = D.LineOffset (fromIntegral n)
+-- | Pattern constructor for 'Offset' using 'Word32'.
+pattern Offset :: Word32 -> Offset
+pattern Offset n <- D.LineOffset (fromIntegral -> n)
+  where
+    Offset n = D.LineOffset (fromIntegral n)
+{-# COMPLETE Offset #-}
 
 -- | Security token wrapping a 'Request' that has been confirmed ready by 'Fuyu.GPIO.EdgeEvent.waitEdgeEvents'.
 newtype ReadyRequest = ReadyRequest Request
@@ -165,12 +167,8 @@ data EdgeEvent = EdgeEvent
   , eventTimestamp  :: !Timestamp
   } deriving (Eq, Ord, Show, Read)
 
--- | Pattern constructor for 'Offset'.
-pattern Offset :: CUInt -> Offset 
-pattern Offset n = D.LineOffset n
-
 -- | Capacity for the user-space edge event buffer (in number of events).
-newtype Capacity = Capacity Word
+newtype Capacity = Capacity { getCapacity :: Word }
   deriving (Eq, Ord, Show, Read)
 
 -- | Smart constructor for user-space event buffer 'Capacity'.
@@ -180,10 +178,6 @@ userBufferCapacity n
   | n == 0    = Capacity 64
   | n > 1024  = Capacity 1024
   | otherwise = Capacity n
-
--- | Extract the numeric capacity value from a 'Capacity' handle.
-getCapacity :: Capacity -> Word
-getCapacity (Capacity n) = n
 
 -- | Size of the kernel-level event ring-buffer (in number of events).
 -- Pass 0 to use the kernel default size (64).
