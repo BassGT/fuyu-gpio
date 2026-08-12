@@ -1,4 +1,6 @@
--- To blink LED 10 times we could follow the next steps
+-- In this example we will learn the basic usage of libgpiod line configuration for output.
+-- We check and initialize a GPIO chip, set a line direction to output mode, and blink an LED 10 times
+-- using nested resource allocation brackets ('withChip', 'withSettings', 'withConfig', 'withRequest').
 module Main where
 
 -- High-level resource brackets & utility functions
@@ -18,7 +20,7 @@ chipPath = "/dev/gpiochip0"
 -- In Orange Pi devices we could find this information with 'gpio readall' command (or in docs)
 -- In this case the line offset 269 corresponds to physical pin 7 
 ledOffset :: Line.Offset 
-ledOffset = Line.offset 269 
+ledOffset = Line.Offset 269 
 
 main :: IO ()
 main = do

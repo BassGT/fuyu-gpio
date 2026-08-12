@@ -1,5 +1,6 @@
--- In this example we will learn how to coordinate an output (LED blinking) and an input (button press)
--- using concurrent threads and an MVar to dynamically control blinking speed.
+-- In this example we will learn how to coordinate GPIO output (LED blinking) and input (button press)
+-- concurrently. We launch two worker threads with 'forkIO' and use an 'MVar' to dynamically
+-- control the LED blinking speed upon detecting button press edge events.
 module Main where
 
 -- High-level resource brackets & exception handling
@@ -32,10 +33,10 @@ bufferCapacity :: Event.Capacity
 bufferCapacity = Event.userBufferCapacity 1
 
 ledOffset :: Line.Offset
-ledOffset = Line.offset 256 
+ledOffset = Line.Offset 256 
 
 buttonOffset :: Line.Offset
-buttonOffset = Line.offset 271
+buttonOffset = Line.Offset 271
 
 type Microseconds = Int
 
@@ -68,7 +69,7 @@ buttonSettings stgs = do
   Line.setDebouncePeriodUs stgs 80000      -- 80ms native kernel debounce period to filter out mechanical contact bounce without threadDelay
   Line.setEdgeDetection stgs Line.EdgeFalling -- Listen for Falling edge transitions (button press to GND)
 
--- Worker thread A: Blinks the LED continuously using the delay duration read from the MVar
+-- Blinks the LED continuously using the delay duration read from the MVar
 ledWorker :: Line.Request -> MVar LooptimeState -> IO ()
 ledWorker req speedMVar = forever $ do
   lts <- readMVar speedMVar
@@ -78,7 +79,7 @@ ledWorker req speedMVar = forever $ do
   Line.setValue req ledOffset Line.Inactive
   threadDelay delayUs
 
--- Worker thread B: Listens for button edge events and cycles the blinking speed state
+-- Listens for button edge events and cycles the blinking speed state
 buttonWorker :: Line.Request -> Event.Buffer -> MVar LooptimeState -> IO ()
 buttonWorker req buf speedMVar = do
   res <- Event.waitEdgeEvents req waitTimeoutNs

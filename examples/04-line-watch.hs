@@ -1,3 +1,6 @@
+-- In this example we will learn how to monitor GPIO line status changes across processes using chip watching.
+-- This example structures the application into modular helper functions ('runApp', 'monitorApp', 'lineApp'),
+-- serving as an intermediate modular phase before refactoring nested brackets with monadic continuation ('ContT').
 module Main where
 
 -- High-level resource brackets & exception handling
@@ -17,7 +20,7 @@ chipPath :: FilePath
 chipPath = "/dev/gpiochip0"
 
 targetOffset :: Line.Offset
-targetOffset = Line.offset 257
+targetOffset = Line.Offset 257
 
 waitTimeoutNs :: Watch.Timeout
 waitTimeoutNs = Watch.Nanoseconds 5000000000 -- 5 seconds

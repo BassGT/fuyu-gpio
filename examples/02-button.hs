@@ -1,4 +1,6 @@
--- In this example we will learn how to handle a button input using libgpiod line settings.
+-- In this example we will learn how to handle a GPIO input line with edge event detection.
+-- We configure internal pull-up bias, line debounce filtering, and edge detection (Rising & Falling),
+-- using a user-space event buffer with 'userBufferCapacity 1' to read button press events.
 module Main where
 
 -- High-level resource brackets & exception handling
@@ -28,7 +30,7 @@ bufferCapacity :: Event.Capacity
 bufferCapacity = Event.userBufferCapacity 1 
  
 buttonOffset :: Line.Offset
-buttonOffset = Line.offset 257 
+buttonOffset = Line.Offset 257 
 
 
 buttonSettings :: Line.Settings -> IO ()
