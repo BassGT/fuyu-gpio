@@ -6,7 +6,7 @@ Built on top of [`fuyu-gpio-direct`](https://github.com/BassGT/fuyu-gpio-direct)
 
 ---
 
-## ⚡ Features
+## Features
 
 - **Safe Resource Brackets**: Automatic cleanup of chip handles, settings, line configurations, and requests using `withChip`, `withSettings`, `withConfig`, and `withRequest`.
 - **Double-Safe Event Handling**: Event waiting and reading secured by `ReadyRequest` tokens, returning guaranteed `NonEmpty EdgeEvent` lists.
@@ -18,7 +18,7 @@ Built on top of [`fuyu-gpio-direct`](https://github.com/BassGT/fuyu-gpio-direct)
 
 ---
 
-## 🚀 Quick Example: Blinking Multiple LEDs
+## Quick Example: Blinking Multiple LEDs
 
 The following example demonstrates how to open a GPIO chip, configure multiple output pins, request access, and toggle them concurrently:
 
@@ -34,7 +34,7 @@ import qualified Fuyu.GPIO.Line as Line
 
 -- Define target GPIO line offsets
 ledOffsets :: V.Vector Offset
-ledOffsets = V.fromList (map offset [256, 271, 268])
+ledOffsets = V.fromList (map Offset [256, 271, 268])
 
 -- Define states for turning all LEDs ON or OFF
 onValues :: V.Vector Value
@@ -65,7 +65,7 @@ main = do
 
 ---
 
-## 🐳 Cross-Compilation & Container Environment
+## Cross-Compilation & Container Environment
 
 `fuyu-gpio` includes a `Dockerfile` targeting **Debian Trixie (ARM64)** pre-configured with GHC 9.10.3, Cabal, and `libgpiod v2`. This is ideal for cross-compiling or building binaries for single-board computers (Raspberry Pi, Orange Pi, BeagleBone, etc.) using Podman or Docker.
 
@@ -102,7 +102,7 @@ cabal run exe:01-blink
 
 ---
 
-## 📚 Module Architecture
+## Module Architecture
 
 | Domain Module | Managed Brackets (`with*`) | Metadata Submodule (`.Info`) | Manual Submodule (`.Unsafe`) |
 | :--- | :--- | :--- | :--- |
@@ -119,10 +119,10 @@ This library is distributed under the **LGPL-2.1-or-later** license.
 
 ---
 
-## 👤 Author & Maintainer
+## Author & Maintainer
 
 - **Author**: BassGT
-- **Maintainer**: `springtrap9397@gmail.com`
+- **Maintainer**: `sebastian11medrano@gmail.com`
 
 
 
