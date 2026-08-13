@@ -7,8 +7,8 @@
 -- Stability   : experimental
 -- Portability : POSIX (Linux gpiod v2)
 --
--- This module provides managed resource brackets ('withEventBuffer') and functions for waiting
--- on edge events ('waitEdgeEvents') and reading them ('readEdgeEvents') securely using the
+-- This module provides managed resource brackets ('withBuffer') and functions for waiting
+-- on edge events ('waitEvents') and reading them ('readEvents') securely using the
 -- 'ReadyRequest' capability token.
 module Fuyu.GPIO.EdgeEvent
   ( -- * Security Token & Wait Result
@@ -20,7 +20,7 @@ module Fuyu.GPIO.EdgeEvent
   , Buffer
   , Capacity
   , userBufferCapacity
-  , getCapacity
+  , capacity
   , Event
   , Timeout
   , pattern Nanoseconds
@@ -34,26 +34,25 @@ module Fuyu.GPIO.EdgeEvent
     -- * Event Data Type & Parser
   , NonEmpty(..)
   , EdgeEvent(..)
-  , parseEdgeEvent
+  , parseEvent
 
     -- * Event Buffer Operations (Managed)
-  , withEventBuffer
-  , getEventBufferCapacity
-  , getEventBufferNumEvents
-  , getEventBufferEvent
+  , withBuffer
+  , bufferCapacity
+  , bufferNumEvents
+  , bufferEvent
 
     -- * Waiting & Reading Events
-  , waitEdgeEvents
-  , readEdgeEvents
-  , readEdgeEventsRaw
-  , withRawEdgeEvents
+  , waitEvents
+  , readEvents
+  , withRawEvents
 
     -- * RawEdgeEvent Metadata Accessors
-  , getEventType
-  , getTimestampNs
-  , getLineOffset
-  , getGlobalSeqNo
-  , getLineSeqNo
+  , eventType
+  , timestampNs
+  , lineOffset
+  , globalSeqNo
+  , lineSeqNo
   , copyEvent
   ) where
 
@@ -63,90 +62,82 @@ import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
 import Data.Word (Word64)
 import qualified Fuyu.GPIO.Direct as D
-import Fuyu.GPIO.EdgeEvent.Unsafe (newEventBuffer, freeEventBuffer)
+import Fuyu.GPIO.EdgeEvent.Unsafe (newEventBuffer, freeEventBuffer, readEventsRaw)
 import Fuyu.GPIO.Exception
-import Fuyu.GPIO.Types
+import Fuyu.GPIO.Types hiding (eventType)
 
 -- | Allocate an edge event buffer of the specified capacity and free it automatically afterwards.
-withEventBuffer :: Capacity -> (Buffer -> IO a) -> IO a
-withEventBuffer capacity = bracket (newEventBuffer capacity) freeEventBuffer
+withBuffer :: Capacity -> (Buffer -> IO a) -> IO a
+withBuffer capacity' = bracket (newEventBuffer capacity') freeEventBuffer
 
 -- | Get the capacity of an event buffer.
-getEventBufferCapacity :: Buffer -> IO Capacity
-getEventBufferCapacity buf = userBufferCapacity <$> D.eventBufferCapacity buf
+bufferCapacity :: Buffer -> IO Capacity
+bufferCapacity buf = userBufferCapacity <$> D.eventBufferCapacity buf
 
 -- | Get the number of events currently stored in an event buffer.
-getEventBufferNumEvents :: Buffer -> IO Word
-getEventBufferNumEvents = D.eventBufferNumEvents
+bufferNumEvents :: Buffer -> IO Word
+bufferNumEvents = D.eventBufferNumEvents
 
 -- | Get a specific edge event from the buffer by index.
-getEventBufferEvent :: Buffer -> Word -> IO Event
-getEventBufferEvent buf idx = unwrapOrThrow ReadEdgeEventsFailed (D.eventBufferGetEvent buf idx)
+bufferEvent :: Buffer -> Word -> IO Event
+bufferEvent buf idx = unwrapOrThrow ReadEdgeEventsFailed (D.eventBufferGetEvent buf idx)
 
 -- | Wait for edge events to occur on requested lines until the specified timeout.
 -- Throws 'WaitEdgeEventsFailed' on error.
-waitEdgeEvents :: Request -> Timeout -> IO (WaitResult ReadyRequest)
-waitEdgeEvents req timeout = do
+waitEvents :: Request -> Timeout -> IO (WaitResult ReadyRequest)
+waitEvents req timeout = do
   res <- unwrapOrThrow WaitEdgeEventsFailed (D.lineRequestWaitEdgeEvents req timeout)
   pure $ case res of
     D.EventReady -> EventReady (ReadyRequest req)
     D.Timeout    -> TimeoutResult
 
--- | Read raw edge events into the buffer and return the number of events read.
--- Automatically uses the buffer's full capacity.
--- Throws 'ReadEdgeEventsFailed' on error.
-readEdgeEventsRaw :: ReadyRequest -> Buffer -> IO Int
-readEdgeEventsRaw (ReadyRequest req) buf = do
-  cap <- D.eventBufferCapacity buf
-  unwrapOrThrow ReadEdgeEventsFailed (D.lineRequestReadEdgeEvents req buf cap)
-
 -- | Parse a raw edge event pointer into a pure Haskell 'EdgeEvent' structure.
-parseEdgeEvent :: Event -> IO EdgeEvent
-parseEdgeEvent ev = EdgeEvent
+parseEvent :: Event -> IO EdgeEvent
+parseEvent ev = EdgeEvent
   <$> D.rawEdgeEventLineOffset ev
   <*> D.rawEdgeEventType ev
   <*> D.rawEdgeEventTimestampNs ev
 
--- | Read buffered edge events once 'waitEdgeEvents' indicates they are ready,
+-- | Read buffered edge events once 'waitEvents' indicates they are ready,
 -- parsing them into a non-empty list of pure 'EdgeEvent' structures.
-readEdgeEvents :: ReadyRequest -> Buffer -> IO (NonEmpty EdgeEvent)
-readEdgeEvents readyReq buf = withRawEdgeEvents readyReq buf parseEdgeEvent
+readEvents :: ReadyRequest -> Buffer -> IO (NonEmpty EdgeEvent)
+readEvents readyReq buf = withRawEvents readyReq buf parseEvent
 
 -- | Process raw edge events directly in the buffer using a callback without intermediate allocations,
 -- returning a non-empty list of results.
-withRawEdgeEvents :: ReadyRequest -> Buffer -> (Event -> IO a) -> IO (NonEmpty a)
-withRawEdgeEvents readyReq buf action = do
-  count <- readEdgeEventsRaw readyReq buf
+withRawEvents :: ReadyRequest -> Buffer -> (Event -> IO a) -> IO (NonEmpty a)
+withRawEvents readyReq buf action = do
+  count <- readEventsRaw readyReq buf
   results <- forM [0 .. count - 1] $ \idx -> do
-    ev <- getEventBufferEvent buf (fromIntegral idx)
+    ev <- bufferEvent buf (fromIntegral idx)
     action ev
   case NE.nonEmpty results of
     Just ne -> pure ne
-    Nothing -> ioError (userError "readEdgeEvents: expected at least one event from ReadyRequest but got none")
+    Nothing -> ioError (userError "readEvents: expected at least one event from ReadyRequest but got none")
 
 --------------------------------------------------------------------------------
 -- RawEdgeEvent Metadata Accessors
 --------------------------------------------------------------------------------
 
 -- | Get the type of event ('Rising' or 'Falling').
-getEventType :: Event -> IO EdgeEventType
-getEventType = D.rawEdgeEventType
+eventType :: Event -> IO EdgeEventType
+eventType = D.rawEdgeEventType
 
 -- | Get the event timestamp in nanoseconds.
-getTimestampNs :: Event -> IO Timestamp
-getTimestampNs = D.rawEdgeEventTimestampNs
+timestampNs :: Event -> IO Timestamp
+timestampNs = D.rawEdgeEventTimestampNs
 
 -- | Get the offset of the line that triggered the event.
-getLineOffset :: Event -> IO Offset
-getLineOffset = D.rawEdgeEventLineOffset
+lineOffset :: Event -> IO Offset
+lineOffset = D.rawEdgeEventLineOffset
 
 -- | Get the global sequence number of the event.
-getGlobalSeqNo :: Event -> IO Word64
-getGlobalSeqNo = D.rawEdgeEventGlobalSeqNo
+globalSeqNo :: Event -> IO Word64
+globalSeqNo = D.rawEdgeEventGlobalSeqNo
 
 -- | Get the line-specific sequence number of the event.
-getLineSeqNo :: Event -> IO Offset
-getLineSeqNo = D.rawEdgeEventLineSeqNo
+lineSeqNo :: Event -> IO Offset
+lineSeqNo = D.rawEdgeEventLineSeqNo
 
 -- | Make a copy of a raw edge event object.
 copyEvent :: Event -> IO Event

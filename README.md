@@ -1,5 +1,9 @@
 # fuyu-gpio
 
+[![Haskell](https://img.shields.io/badge/Language-Haskell-purple.svg)](https://www.haskell.org/)
+[![License](https://img.shields.io/badge/License-LGPL_2.1--or--later-blue.svg)](LICENSE)
+[![Hackage](https://img.shields.io/badge/Hackage-fuyu--gpio-blue.svg)](https://hackage.haskell.org/package/fuyu-gpio)
+
 High-level, type-safe, and resource-managed Haskell interface for Linux GPIO character devices using **libgpiod v2**.
 
 Built on top of [`fuyu-gpio-direct`](https://github.com/BassGT/fuyu-gpio-direct), `fuyu-gpio` provides automatic memory management (`bracket` / `with*` style), typed exception handling, metadata snapshots, and zero-copy vector operations for high-performance GPIO I/O.
@@ -18,49 +22,61 @@ Built on top of [`fuyu-gpio-direct`](https://github.com/BassGT/fuyu-gpio-direct)
 
 ---
 
-## Quick Example: Blinking Multiple LEDs
+## Quick Example: Blinking an LED
 
-The following example demonstrates how to open a GPIO chip, configure multiple output pins, request access, and toggle them concurrently:
+The following example demonstrates how to verify a GPIO chip, configure an output line, request access from the kernel, and toggle an LED 10 times using nested resource brackets:
 
 ```haskell
 module Main where
 
+import Fuyu.GPIO.Chip (withChip, isGPIOChip)
+import Fuyu.GPIO.Line (withSettings, withConfig, withRequest)
+import qualified Fuyu.GPIO.Line as Line
+
 import Control.Concurrent (threadDelay)
 import Control.Monad (replicateM_)
-import qualified Data.Vector.Storable as V
-import Fuyu.GPIO.Chip 
-import Fuyu.GPIO.Line 
-import qualified Fuyu.GPIO.Line as Line  
+import Data.Vector.Storable (singleton)
 
--- Define target GPIO line offsets
-ledOffsets :: V.Vector Offset
-ledOffsets = V.fromList (map Offset [256, 271, 268])
+chipPath :: FilePath
+chipPath = "/dev/gpiochip0" 
 
--- Define states for turning all LEDs ON or OFF
-onValues :: V.Vector Value
-onValues = V.fromList [Active, Active, Active]
-
-offValues :: V.Vector Value
-offValues = V.fromList [Inactive, Inactive, Inactive]
+ledOffset :: Line.Offset 
+ledOffset = Line.Offset 269 
 
 main :: IO ()
 main = do
-  -- Safely open the GPIO chip character device
-  withChip "/dev/gpiochip0" $ \chip -> do
-    -- Configure line direction as Output
-    withSettings $ \settings -> do
-      Line.setDirection settings DirOutput
-      -- Attach settings to configured line offsets
-      withConfig $ \config -> do
-        Line.addSettings config ledOffsets settings
-        -- Request access to the lines from the kernel
-        withRequest chip Nothing config $ \request -> do
-          -- Blink all 3 LEDs 10 times with 500ms delay
-          replicateM_ 10 $ do 
-            Line.setValues request onValues
-            threadDelay 500000 -- 500ms
-            Line.setValues request offValues
-            threadDelay 500000 -- 500ms
+   isChip <- isGPIOChip chipPath
+   if isChip
+     then runApp
+     else putStrLn $ chipPath ++ " does not correspond to a valid GPIO Chip"
+
+runApp :: IO ()
+runApp = do
+   withChip chipPath $ \chip -> do
+      withSettings $ \settings -> do
+         Line.setDirection settings Line.DirOutput
+         withConfig $ \config -> do
+            Line.addSettings config (singleton ledOffset) settings
+            withRequest chip Nothing config $ \request -> do
+               replicateM_ 10 $ do 
+                 Line.setValue request ledOffset Line.Active
+                 threadDelay 500000 -- 500ms   
+                 Line.setValue request ledOffset Line.Inactive
+                 threadDelay 500000 -- 500ms
+```
+
+---
+
+## Documentation
+
+Complete online Haddock API documentation with hyperlinked source code is published on Hackage:
+
+👉 **[https://hackage.haskell.org/package/fuyu-gpio](https://hackage.haskell.org/package/fuyu-gpio)**
+
+To generate documentation locally with hyperlinked source code:
+
+```bash
+cabal haddock --haddock-for-hackage --open
 ```
 
 ---
@@ -113,9 +129,9 @@ cabal run exe:01-blink
 
 ---
 
-## 📄 License
+## License
 
-This library is distributed under the **LGPL-2.1-or-later** license.
+This library is distributed under the **LGPL-2.1-or-later** license. See the [LICENSE](LICENSE) file for details.
 
 ---
 

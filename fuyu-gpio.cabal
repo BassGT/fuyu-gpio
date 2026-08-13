@@ -1,17 +1,16 @@
 cabal-version:      3.0
 name:               fuyu-gpio
-version:            0.1.0.0
-synopsis:           Abstract high-level layer for fuyu-gpio-direct
-description:        High-level managed abstraction layer built on top of fuyu-gpio-direct for libgpiod.
+version:            0.0.9.0
+synopsis:           High-level, type-safe interface for Linux GPIO (libgpiod v2).
+description:        High-level, type-safe, and resource-managed Haskell interface for Linux GPIO character devices using libgpiod v2. Built on top of fuyu-gpio-direct, fuyu-gpio provides automatic memory management (bracket / with* style), typed exception handling, metadata snapshots, and zero-copy vector operations for high-performance GPIO I/O.
 license:            LGPL-2.1-or-later
 license-file:       LICENSE
 author:             BassGT
-maintainer:         springtrap9397@gmail.com
+maintainer:         sebastian11medrano@gmail.com
 -- copyright:
-category:           System
+category:           System, Hardware
 build-type:         Simple
-extra-doc-files:    README.md
-                    CHANGELOG.md
+extra-doc-files:    CHANGELOG.md
 
 source-repository head
     type:     git
@@ -68,7 +67,10 @@ common example-config
         build-depends:
             base >= 4.18 && < 5,
             fuyu-gpio,
-            vector
+            vector ^>= 0.13.1.0,
+            transformers >= 0.5 && < 0.7,
+            bytestring ^>= 0.12.1.0
+
 
 executable 01-blink
     import:           example-config
@@ -81,8 +83,13 @@ executable 02-button
 executable 03-led-and-button
     import:           example-config
     main-is:          03-led-and-button.hs
+    ghc-options:      -threaded 
 
 executable 04-line-watch
     import:           example-config
     main-is:          04-line-watch.hs
     ghc-options:      -threaded -rtsopts
+    
+executable 05-request-config  
+    import:           example-config
+    main-is:          05-request-config.hs

@@ -36,12 +36,12 @@ module Fuyu.GPIO.Line.Info
 import Control.Exception (bracket)
 import Data.ByteString (ByteString)
 import qualified Fuyu.GPIO.Direct as D
-import Fuyu.GPIO.Line.Info.Unsafe (getLineInfo, freeLineInfo)
+import Fuyu.GPIO.Line.Info.Unsafe (lineInfo, freeLineInfo)
 import Fuyu.GPIO.Types
 
 -- | Retrieve information about a specific line on a chip and free it automatically afterwards.
 withLineInfo :: Chip -> Offset -> (LineInfo -> IO a) -> IO a
-withLineInfo chip offset' = bracket (getLineInfo chip offset') freeLineInfo
+withLineInfo chip offset' = bracket (lineInfo chip offset') freeLineInfo
 
 -- | Get the numeric 'Offset' of the line from a 'LineInfo' snapshot.
 offset :: LineInfo -> IO Offset

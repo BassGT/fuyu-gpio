@@ -33,7 +33,7 @@ offsetDT = Line.Offset 271
 fiveSecondsNs :: EdgeEvent.Timeout
 fiveSecondsNs = EdgeEvent.Nanoseconds 5000000000
 
--- Setting user buffer capacity to 1 guarantees that 'readEdgeEvents' returns exactly 1 event at a time.
+-- Setting user buffer capacity to 1 guarantees that 'readEvents' returns exactly 1 event at a time.
 -- This simplifies pattern matching to '(ev :| _)' without losing any events in the kernel queue.
 capacity :: EdgeEvent.Capacity
 capacity = EdgeEvent.userBufferCapacity 1
@@ -67,7 +67,7 @@ main = withGpioApp $ do
 withAppRequestConfig :: (ReqConf.RequestConfig -> IO r) -> IO r
 withAppRequestConfig action = ReqConf.withRequestConfig $ \reqconf -> do
   ReqConf.setConsumer reqconf "encoder-app"
-  ReqConf.setEventBufferSize reqconf 256
+  ReqConf.setBufferSize reqconf 256
   action reqconf
 
 -- Encapsulates line settings configuration (input mode, 1ms debounce, edge detection).
@@ -97,7 +97,7 @@ runApp = evalContT $ do
   settings <- ContT withAppLineSettings
   config   <- ContT $ withAppLineConfig settings
   request  <- ContT $ Line.withRequest chip (Just reqconf) config
-  buffer   <- ContT $ EdgeEvent.withEventBuffer capacity
+  buffer   <- ContT $ EdgeEvent.withBuffer capacity
 
   -- Run stateful application loop starting with 'initialState'
   liftIO $ evalStateT (appLoop request buffer) initialState
@@ -109,13 +109,13 @@ runApp = evalContT $ do
 -- Application loop running in 'StateT EncoderState IO ()'.
 appLoop :: Line.Request -> EdgeEvent.Buffer -> StateT EncoderState IO ()
 appLoop request buffer = forever $ do
-  result <- liftIO $ EdgeEvent.waitEdgeEvents request fiveSecondsNs
+  result <- liftIO $ EdgeEvent.waitEvents request fiveSecondsNs
   case result of
     EdgeEvent.TimeoutResult -> 
       liftIO $ putStrLn "No edge event was read (timeout)."
 
     EdgeEvent.EventReady req -> do
-      (ev :| _) <- liftIO $ EdgeEvent.readEdgeEvents req buffer
+      (ev :| _) <- liftIO $ EdgeEvent.readEvents req buffer
       oldPos    <- gets position
       
       -- Update pure state cleanly using strict 'modify''
@@ -130,7 +130,7 @@ appLoop request buffer = forever $ do
 --   - DT == 1 (HIGH) -> Clockwise rotation (+1)
 --   - DT == 0 (LOW)  -> Counter-Clockwise rotation (-1)
 updateEncoderState :: EdgeEvent.EdgeEvent -> EncoderState -> EncoderState
-updateEncoderState ev st = case (EdgeEvent.eventLineOffset ev, EdgeEvent.eventType ev) of
+updateEncoderState (EdgeEvent.EdgeEvent offset evType _) st = case (offset, evType) of
   (Line.Offset 256, EdgeEvent.Falling) ->
     let delta  = if dtPin st == 1 then 1 else (-1)
     in st { clkPin = 0, position = position st + delta }

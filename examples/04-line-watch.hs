@@ -38,21 +38,21 @@ runApp = do
   withChip chipPath $ \chip -> do
     -- Register the line watch in the kernel before any interaction
     -- (required so the kernel starts queueing status events for targetOffset)
-    Watch.withWatchLineInfo chip targetOffset $ \_lineInfo -> do
+    Watch.withWatchLine chip targetOffset $ \_lineInfo -> do
       _ <- forkIO $ lineApp chip
       monitorApp chip 
 
--- 'monitorApp' waits for status change events using 'waitInfoEvent' and security token 'ReadyChip'
+-- 'monitorApp' waits for status change events using 'waitEvent' and security token 'ReadyChip'
 monitorApp :: Chip -> IO ()
 monitorApp chip = do     
   putStrLn "Waiting for line status change event (timeout: 5s)..."
-  res <- Watch.waitInfoEvent chip waitTimeoutNs
+  res <- Watch.waitEvent chip waitTimeoutNs
   case res of
-    -- Same pattern as 'Fuyu.GPIO.EdgeEvent.waitEdgeEvents'
+    -- Same pattern as 'Fuyu.GPIO.EdgeEvent.waitEvents'
     Watch.EventReady readyChip -> do
-      Watch.withInfoEvent readyChip $ \infoEvent -> do
+      Watch.withEvent readyChip $ \infoEvent -> do
         -- In this case, we expect a 'Requested' info event type
-        eventType <- Watch.getInfoEventType infoEvent      
+        eventType <- Watch.eventType infoEvent      
         putStrLn ("Event received! " ++ show eventType)
     Watch.TimeoutResult -> putStrLn "Wait timed out (timeout)."
 
@@ -64,6 +64,6 @@ lineApp chip = do
     withConfig $ \config -> do
       Line.addSettings config (singleton targetOffset) settings 
       withRequest chip Nothing config $ \request -> do
-        name <- Line.getRequestChipName request
+        name <- Line.chipName request
         putStrLn ("Line request created successfully on chip: " ++ show name)
         threadDelay 500000 -- Hold requested line briefly

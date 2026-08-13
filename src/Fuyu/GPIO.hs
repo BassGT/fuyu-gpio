@@ -23,8 +23,8 @@ module Fuyu.GPIO
   , withGpioApp
   ) where
 
-import Fuyu.GPIO.Chip
-import Fuyu.GPIO.Line
+import Fuyu.GPIO.Chip hiding (fd, eventType, timestampNs)
+import Fuyu.GPIO.Line hiding (fd)
 import Fuyu.GPIO.RequestConfig
 import Fuyu.GPIO.EdgeEvent
 import Fuyu.GPIO.Exception (GpioException(..), withGpioApp)

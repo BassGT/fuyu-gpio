@@ -1,5 +1,4 @@
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE ViewPatterns #-}
 module Fuyu.GPIO.Types
   ( -- * Handles & Opaque Objects
     Chip
@@ -21,7 +20,7 @@ module Fuyu.GPIO.Types
   , pattern Offset
   , Capacity
   , userBufferCapacity
-  , getCapacity
+  , capacity
   , KernelBufferSize
   , Timeout
   , pattern Nanoseconds
@@ -83,8 +82,7 @@ module Fuyu.GPIO.Types
   , pattern ConfigChanged
   ) where
 
-import Data.Word (Word32)
-import Foreign.C.Types (CULong)
+import Foreign.C.Types (CUInt, CULong)
 import qualified Fuyu.GPIO.Direct as D
 
 -- | Alias for 'D.Chip'
@@ -131,14 +129,7 @@ type InfoEvent     = D.InfoEvent
 -- | Alias for 'D.InfoEventType'
 type InfoEventType = D.InfoEventType
 
--- | Pattern constructor for 'Offset' using 'Word32'.
-pattern Offset :: Word32 -> Offset
-pattern Offset n <- D.LineOffset (fromIntegral -> n)
-  where
-    Offset n = D.LineOffset (fromIntegral n)
-{-# COMPLETE Offset #-}
-
--- | Security token wrapping a 'Request' that has been confirmed ready by 'Fuyu.GPIO.EdgeEvent.waitEdgeEvents'.
+-- | Security token wrapping a 'Request' that has been confirmed ready by 'Fuyu.GPIO.EdgeEvent.waitEvents'.
 newtype ReadyRequest = ReadyRequest Request
   deriving (Eq, Show)
 
@@ -146,7 +137,7 @@ newtype ReadyRequest = ReadyRequest Request
 readyToRequest :: ReadyRequest -> Request
 readyToRequest (ReadyRequest req) = req
 
--- | Security token wrapping a 'Chip' that has been confirmed ready by 'Fuyu.GPIO.Chip.Watch.waitInfoEvent'.
+-- | Security token wrapping a 'Chip' that has been confirmed ready by 'Fuyu.GPIO.Chip.Watch.waitEvent'.
 newtype ReadyChip = ReadyChip Chip
   deriving (Eq, Show)
 
@@ -167,8 +158,12 @@ data EdgeEvent = EdgeEvent
   , eventTimestamp  :: !Timestamp
   } deriving (Eq, Ord, Show, Read)
 
+-- | Pattern constructor for 'Offset'.
+pattern Offset :: CUInt -> Offset 
+pattern Offset n = D.LineOffset n
+
 -- | Capacity for the user-space edge event buffer (in number of events).
-newtype Capacity = Capacity { getCapacity :: Word }
+newtype Capacity = Capacity Word
   deriving (Eq, Ord, Show, Read)
 
 -- | Smart constructor for user-space event buffer 'Capacity'.
@@ -178,6 +173,10 @@ userBufferCapacity n
   | n == 0    = Capacity 64
   | n > 1024  = Capacity 1024
   | otherwise = Capacity n
+
+-- | Extract the numeric capacity value from a 'Capacity' handle.
+capacity :: Capacity -> Word
+capacity (Capacity n) = n
 
 -- | Size of the kernel-level event ring-buffer (in number of events).
 -- Pass 0 to use the kernel default size (64).

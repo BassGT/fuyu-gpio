@@ -13,12 +13,8 @@ module Fuyu.GPIO.Chip.Watch.Unsafe
   , ReadyChip(..)
   , readyToChip
   , InfoEvent
-  , LineInfo
-  , Offset
 
     -- * Unsafe Manual Resource Allocation
-  , watchLineInfo
-  , unwatchLineInfo
   , readInfoEvent
   , freeInfoEvent
   ) where
@@ -27,17 +23,7 @@ import qualified Fuyu.GPIO.Direct as D
 import Fuyu.GPIO.Exception
 import Fuyu.GPIO.Types
 
--- | Start watching a line for status change events (e.g. requested, released, reconfigured).
--- Returns the initial 'LineInfo' snapshot of the line.
--- Must be manually unwatched using 'unwatchLineInfo'.
-watchLineInfo :: Chip -> Offset -> IO LineInfo
-watchLineInfo chip offset' = unwrapOrThrow LineInfoFailed (D.chipWatchLineInfo chip offset')
-
--- | Stop watching a line for status change events.
-unwatchLineInfo :: Chip -> Offset -> IO ()
-unwatchLineInfo chip offset' = unwrapOrThrow LineInfoFailed (D.chipUnwatchLineInfo chip offset')
-
--- | Read a line info event from a chip after 'Fuyu.GPIO.Chip.Watch.waitInfoEvent' confirms it is ready.
+-- | Read a line info event from a chip after 'Fuyu.GPIO.Chip.Watch.waitEvent' confirms it is ready.
 -- Must be manually freed using 'freeInfoEvent'.
 readInfoEvent :: ReadyChip -> IO InfoEvent
 readInfoEvent (ReadyChip chip) = unwrapOrThrow ReadInfoEventFailed (D.chipReadInfoEvent chip)

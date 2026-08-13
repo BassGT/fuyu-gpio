@@ -12,9 +12,9 @@ module Fuyu.GPIO.Chip
     withChip
   , withChipInfo
   , withLineInfo
-  , chipPath
-  , lineOffsetFromName
-  , getChipFd
+  , path
+  , offsetFromName
+  , fd
 
     -- * Line Watch & Info Events
   , module Fuyu.GPIO.Chip.Watch
@@ -37,19 +37,19 @@ import Fuyu.GPIO.Exception
 
 -- | Open a GPIO chip by filesystem path (e.g. "/dev/gpiochip0") and automatically close it when finished.
 withChip :: FilePath -> (Chip -> IO a) -> IO a
-withChip path = bracket (openChip path) closeChip
+withChip path' = bracket (openChip path') closeChip
 
 -- | Retrieve chip filesystem path as a 'ByteString'.
-chipPath :: Chip -> IO ByteString
-chipPath chip = unwrapOrThrow ChipInfoFailed (D.chipPath chip)
+path :: Chip -> IO ByteString
+path chip = unwrapOrThrow ChipInfoFailed (D.chipPath chip)
 
 -- | Map a GPIO line name (e.g. "GPIO17") to its numeric 'Offset' on the chip.
-lineOffsetFromName :: Chip -> ByteString -> IO Offset
-lineOffsetFromName chip name = unwrapOrThrow LineInfoFailed (D.chipLineOffsetFromName chip name)
+offsetFromName :: Chip -> ByteString -> IO Offset
+offsetFromName chip name = unwrapOrThrow LineInfoFailed (D.chipLineOffsetFromName chip name)
 
 -- | Get the underlying Linux file descriptor associated with the GPIO chip handle.
-getChipFd :: Chip -> IO Fd
-getChipFd = D.chipFd
+fd :: Chip -> IO Fd
+fd = D.chipFd
 
 --------------------------------------------------------------------------------
 -- General Utilities

@@ -5,13 +5,13 @@
 -- Stability   : experimental
 -- Portability : POSIX (Linux gpiod v2)
 --
--- Manual resource allocation ('getLineInfo', 'freeLineInfo', 'copyLineInfo') for 'LineInfo' handles.
+-- Manual resource allocation ('lineInfo', 'freeLineInfo', 'copyLineInfo') for 'LineInfo' handles.
 module Fuyu.GPIO.Line.Info.Unsafe
   ( -- * Types
     LineInfo
 
     -- * Unsafe Manual Resource Allocation
-  , getLineInfo
+  , lineInfo
   , freeLineInfo
   , copyLineInfo
   ) where
@@ -22,8 +22,8 @@ import Fuyu.GPIO.Types
 
 -- | Retrieve information about a specific line on a chip.
 -- Must be manually freed using 'freeLineInfo'.
-getLineInfo :: Chip -> Offset -> IO LineInfo
-getLineInfo chip offset' = unwrapOrThrow LineInfoFailed (D.chipLineInfo chip offset')
+lineInfo :: Chip -> Offset -> IO LineInfo
+lineInfo chip offset' = unwrapOrThrow LineInfoFailed (D.chipLineInfo chip offset')
 
 -- | Free a 'LineInfo' handle.
 freeLineInfo :: LineInfo -> IO ()

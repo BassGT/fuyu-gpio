@@ -11,9 +11,9 @@ module Fuyu.GPIO.RequestConfig
   , KernelBufferSize
   , withRequestConfig
   , setConsumer
-  , getConsumer
-  , setEventBufferSize
-  , getEventBufferSize
+  , consumer
+  , setBufferSize
+  , bufferSize
   ) where
 
 import Control.Exception (bracket)
@@ -31,13 +31,13 @@ setConsumer :: RequestConfig -> ByteString -> IO ()
 setConsumer = D.requestConfigSetConsumer
 
 -- | Get consumer name from request config.
-getConsumer :: RequestConfig -> IO ByteString
-getConsumer = D.requestConfigConsumer
+consumer :: RequestConfig -> IO ByteString
+consumer = D.requestConfigConsumer
 
 -- | Set kernel event buffer size for request config. Pass 0 to use kernel default (64).
-setEventBufferSize :: RequestConfig -> KernelBufferSize -> IO ()
-setEventBufferSize = D.requestConfigSetEventBufferSize
+setBufferSize :: RequestConfig -> KernelBufferSize -> IO ()
+setBufferSize = D.requestConfigSetEventBufferSize
 
 -- | Get kernel event buffer size from request config.
-getEventBufferSize :: RequestConfig -> IO KernelBufferSize
-getEventBufferSize = D.requestConfigEventBufferSize
+bufferSize :: RequestConfig -> IO KernelBufferSize
+bufferSize = D.requestConfigEventBufferSize

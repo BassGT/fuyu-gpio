@@ -27,12 +27,12 @@ module Fuyu.GPIO.Chip.Info
 import Control.Exception (bracket)
 import Data.ByteString (ByteString)
 import qualified Fuyu.GPIO.Direct as D
-import Fuyu.GPIO.Chip.Info.Unsafe (getChipInfo, freeChipInfo)
+import Fuyu.GPIO.Chip.Info.Unsafe (chipInfo, freeChipInfo)
 import Fuyu.GPIO.Types
 
 -- | Retrieve information about a GPIO chip and free it automatically afterwards.
 withChipInfo :: Chip -> (ChipInfo -> IO a) -> IO a
-withChipInfo chip = bracket (getChipInfo chip) freeChipInfo
+withChipInfo chip = bracket (chipInfo chip) freeChipInfo
 
 -- | Get the name of the GPIO chip (e.g. "gpiochip4").
 name :: ChipInfo -> IO ByteString

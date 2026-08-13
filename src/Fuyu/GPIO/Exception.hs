@@ -18,6 +18,7 @@ module Fuyu.GPIO.Exception
 
 import Control.Exception (Exception, SomeException, catch, fromException, throwIO, AsyncException(UserInterrupt))
 import Foreign.C.Error (Errno(..))
+import Control.Monad (void)
 
 -- | High-level exceptions thrown by fuyu-gpio operations.
 data GpioException
@@ -100,7 +101,7 @@ unwrapOrThrow mkExc action = do
 -- Automatically handles 'Ctrl+C' ('UserInterrupt'), interrupted system calls ('EINTR' / 'WaitEdgeEventsFailed'),
 -- and prints formatted 'GpioException' messages cleanly without uncaught backtraces.
 withGpioApp :: IO a -> IO ()
-withGpioApp action = (action >> pure ()) `catch` handleAppException
+withGpioApp action = void action `catch` handleAppException
   where
     handleAppException :: SomeException -> IO ()
     handleAppException exc
