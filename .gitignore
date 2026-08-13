@@ -6,3 +6,9 @@ CONTEXT.md
 *.hi
 *.dyn_o
 *.dyn_hi
+01-blink
+02-button
+03-led-and-button
+04-line-watch
+05-request-config
+

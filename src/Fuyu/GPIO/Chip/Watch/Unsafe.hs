@@ -23,7 +23,7 @@ import qualified Fuyu.GPIO.Direct as D
 import Fuyu.GPIO.Exception
 import Fuyu.GPIO.Types
 
--- | Read a line info event from a chip after 'Fuyu.GPIO.Chip.Watch.waitInfoEvent' confirms it is ready.
+-- | Read a line info event from a chip after 'Fuyu.GPIO.Chip.Watch.waitEvent' confirms it is ready.
 -- Must be manually freed using 'freeInfoEvent'.
 readInfoEvent :: ReadyChip -> IO InfoEvent
 readInfoEvent (ReadyChip chip) = unwrapOrThrow ReadInfoEventFailed (D.chipReadInfoEvent chip)

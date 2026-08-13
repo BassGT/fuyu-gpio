@@ -8,7 +8,7 @@ import Fuyu.GPIO.Chip (withChip)
 import Fuyu.GPIO.Exception (withGpioApp)
 import Fuyu.GPIO.Line (withSettings, withConfig, withRequest)
 import qualified Fuyu.GPIO.Line as Line
-import Fuyu.GPIO.EdgeEvent (withEventBuffer)
+import Fuyu.GPIO.EdgeEvent (withBuffer)
 import qualified Fuyu.GPIO.EdgeEvent as Event
 
 -- Base & third-party libraries
@@ -21,7 +21,7 @@ import System.IO (BufferMode(NoBuffering), hSetBuffering, stdout)
 chipPath :: FilePath
 chipPath = "/dev/gpiochip0"
 
--- This constant defines the maximum duration 'waitEdgeEvents' will wait for an event.
+-- This constant defines the maximum duration 'waitEvents' will wait for an event.
 -- A short 100ms timeout yields execution back to the RTS so worker threads run smoothly.
 waitTimeoutNs :: Event.Timeout
 waitTimeoutNs = Event.Nanoseconds 100000000 
@@ -82,10 +82,10 @@ ledWorker req speedMVar = forever $ do
 -- Listens for button edge events and cycles the blinking speed state
 buttonWorker :: Line.Request -> Event.Buffer -> MVar LooptimeState -> IO ()
 buttonWorker req buf speedMVar = do
-  res <- Event.waitEdgeEvents req waitTimeoutNs
+  res <- Event.waitEvents req waitTimeoutNs
   case res of
     Event.EventReady readyReq -> do
-      _events <- Event.readEdgeEvents readyReq buf -- Read events from user buffer (configured with capacity 1)
+      _events <- Event.readEvents readyReq buf -- Read events from user buffer (configured with capacity 1)
       modifyMVar_ speedMVar (return . nextSpeed)
     Event.TimeoutResult -> threadDelay 20000 -- 20ms pause to yield file descriptor to LED worker thread
 
@@ -105,7 +105,7 @@ runApp = do
           Line.addSettings config (singleton ledOffset) ledStgs
           Line.addSettings config (singleton buttonOffset) buttonStgs
           withRequest chip Nothing config $ \request -> do
-            withEventBuffer bufferCapacity $ \buffer -> do
+            withBuffer bufferCapacity $ \buffer -> do
               Line.setValue request ledOffset Line.Inactive
               putStrLn "Loop started: LED blinking concurrently. Press the button to change speed, or Ctrl+C to exit"
               tid <- forkIO (forever $ ledWorker request initialSpeedMVar)

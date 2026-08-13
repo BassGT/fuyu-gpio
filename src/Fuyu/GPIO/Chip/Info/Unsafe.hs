@@ -5,13 +5,13 @@
 -- Stability   : experimental
 -- Portability : POSIX (Linux gpiod v2)
 --
--- Manual resource allocation ('getChipInfo', 'freeChipInfo') for 'ChipInfo' handles.
+-- Manual resource allocation ('chipInfo', 'freeChipInfo') for 'ChipInfo' handles.
 module Fuyu.GPIO.Chip.Info.Unsafe
   ( -- * Types
     ChipInfo
 
     -- * Unsafe Manual Resource Allocation
-  , getChipInfo
+  , chipInfo
   , freeChipInfo
   ) where
 
@@ -21,8 +21,8 @@ import Fuyu.GPIO.Types
 
 -- | Retrieve chip info directly.
 -- Must be manually freed using 'freeChipInfo'.
-getChipInfo :: Chip -> IO ChipInfo
-getChipInfo chip = unwrapOrThrow ChipInfoFailed (D.chipInfo chip)
+chipInfo :: Chip -> IO ChipInfo
+chipInfo chip = unwrapOrThrow ChipInfoFailed (D.chipInfo chip)
 
 -- | Free a 'ChipInfo' handle.
 freeChipInfo :: ChipInfo -> IO ()

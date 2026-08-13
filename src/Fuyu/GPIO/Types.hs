@@ -17,11 +17,10 @@ module Fuyu.GPIO.Types
 
     -- * Units & Index Types
   , Offset
-  , offset
   , pattern Offset
   , Capacity
   , userBufferCapacity
-  , getCapacity
+  , capacity
   , KernelBufferSize
   , Timeout
   , pattern Nanoseconds
@@ -83,7 +82,6 @@ module Fuyu.GPIO.Types
   , pattern ConfigChanged
   ) where
 
-import Data.Word (Word32)
 import Foreign.C.Types (CUInt, CULong)
 import qualified Fuyu.GPIO.Direct as D
 
@@ -131,12 +129,7 @@ type InfoEvent     = D.InfoEvent
 -- | Alias for 'D.InfoEventType'
 type InfoEventType = D.InfoEventType
 
--- | Helper function to construct an 'Offset' from a 32-bit unsigned integer (e.g. 'offset 17').
-{-# INLINE offset #-}
-offset :: Word32 -> Offset
-offset n = D.LineOffset (fromIntegral n)
-
--- | Security token wrapping a 'Request' that has been confirmed ready by 'Fuyu.GPIO.EdgeEvent.waitEdgeEvents'.
+-- | Security token wrapping a 'Request' that has been confirmed ready by 'Fuyu.GPIO.EdgeEvent.waitEvents'.
 newtype ReadyRequest = ReadyRequest Request
   deriving (Eq, Show)
 
@@ -144,7 +137,7 @@ newtype ReadyRequest = ReadyRequest Request
 readyToRequest :: ReadyRequest -> Request
 readyToRequest (ReadyRequest req) = req
 
--- | Security token wrapping a 'Chip' that has been confirmed ready by 'Fuyu.GPIO.Chip.Watch.waitInfoEvent'.
+-- | Security token wrapping a 'Chip' that has been confirmed ready by 'Fuyu.GPIO.Chip.Watch.waitEvent'.
 newtype ReadyChip = ReadyChip Chip
   deriving (Eq, Show)
 
@@ -182,8 +175,8 @@ userBufferCapacity n
   | otherwise = Capacity n
 
 -- | Extract the numeric capacity value from a 'Capacity' handle.
-getCapacity :: Capacity -> Word
-getCapacity (Capacity n) = n
+capacity :: Capacity -> Word
+capacity (Capacity n) = n
 
 -- | Size of the kernel-level event ring-buffer (in number of events).
 -- Pass 0 to use the kernel default size (64).

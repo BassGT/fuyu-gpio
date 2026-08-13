@@ -7,7 +7,7 @@
 -- Stability   : experimental
 -- Portability : POSIX (Linux gpiod v2)
 --
--- This module provides managed resource brackets ('withWatchLineInfo', 'withInfoEvent')
+-- This module provides managed resource brackets ('withWatchLine', 'withEvent')
 -- and functions for watching line status changes (e.g. requested, released, reconfigured).
 --
 -- It is designed to be imported qualified or used via top-level "Fuyu.GPIO":
@@ -23,7 +23,6 @@ module Fuyu.GPIO.Chip.Watch
   , WaitResult(..)
   , LineInfo
   , Offset
-  , offset
   , pattern Offset
   , Timeout
   , pattern Nanoseconds
@@ -37,64 +36,64 @@ module Fuyu.GPIO.Chip.Watch
   , pattern ConfigChanged
 
     -- * Managed Brackets
-  , withWatchLineInfo
-  , withInfoEvent
+  , withWatchLine
+  , withEvent
 
     -- * Line Watch Operations
-  , watchLineInfo
-  , unwatchLineInfo
-  , waitInfoEvent
+  , watchLine
+  , unwatchLine
+  , waitEvent
 
     -- * InfoEvent Accessors
-  , getInfoEventType
-  , getInfoEventTimestamp
-  , getInfoEventLineInfo
+  , eventType
+  , timestampNs
+  , lineInfo
   ) where
 
 import Control.Exception (bracket)
 import qualified Fuyu.GPIO.Direct as D
 import Fuyu.GPIO.Chip.Watch.Unsafe (readInfoEvent, freeInfoEvent)
 import Fuyu.GPIO.Exception
-import Fuyu.GPIO.Types
+import Fuyu.GPIO.Types hiding (eventType)
 
 -- | Start watching a line for status change events (e.g. requested, released, reconfigured)
 -- within a bracket, automatically unwatching the line when finished.
 --
 -- Passes the initial 'LineInfo' snapshot of the line to the callback.
-withWatchLineInfo :: Chip -> Offset -> (LineInfo -> IO a) -> IO a
-withWatchLineInfo chip offset' = bracket (watchLineInfo chip offset') (\_ -> unwatchLineInfo chip offset')
+withWatchLine :: Chip -> Offset -> (LineInfo -> IO a) -> IO a
+withWatchLine chip offset' = bracket (watchLine chip offset') (\_ -> unwatchLine chip offset')
 
 -- | Start watching a line for status change events (e.g. requested, released, reconfigured).
 -- Returns the initial 'LineInfo' snapshot of the line.
-watchLineInfo :: Chip -> Offset -> IO LineInfo
-watchLineInfo chip offset' = unwrapOrThrow LineInfoFailed (D.chipWatchLineInfo chip offset')
+watchLine :: Chip -> Offset -> IO LineInfo
+watchLine chip offset' = unwrapOrThrow LineInfoFailed (D.chipWatchLineInfo chip offset')
 
 -- | Stop watching a line for status change events.
-unwatchLineInfo :: Chip -> Offset -> IO ()
-unwatchLineInfo chip offset' = unwrapOrThrow LineInfoFailed (D.chipUnwatchLineInfo chip offset')
+unwatchLine :: Chip -> Offset -> IO ()
+unwatchLine chip offset' = unwrapOrThrow LineInfoFailed (D.chipUnwatchLineInfo chip offset')
 
 -- | Wait for status change info events on any of the watched lines on the chip until the specified timeout.
 -- Throws 'WaitInfoEventFailed' on error.
-waitInfoEvent :: Chip -> Timeout -> IO (WaitResult ReadyChip)
-waitInfoEvent chip timeout = do
+waitEvent :: Chip -> Timeout -> IO (WaitResult ReadyChip)
+waitEvent chip timeout = do
   res <- unwrapOrThrow WaitInfoEventFailed (D.chipWaitInfoEvent chip timeout)
   pure $ case res of
     D.EventReady -> EventReady (ReadyChip chip)
     D.Timeout    -> TimeoutResult
 
--- | Read a status change info event from a chip once 'waitInfoEvent' indicates it is ready,
+-- | Read a status change info event from a chip once 'waitEvent' indicates it is ready,
 -- and automatically free it afterwards.
-withInfoEvent :: ReadyChip -> (InfoEvent -> IO a) -> IO a
-withInfoEvent readyChip = bracket (readInfoEvent readyChip) freeInfoEvent
+withEvent :: ReadyChip -> (InfoEvent -> IO a) -> IO a
+withEvent readyChip = bracket (readInfoEvent readyChip) freeInfoEvent
 
--- | Get the event type of an 'InfoEvent' ('LineRequested', 'LineReleased', 'LineConfigChanged').
-getInfoEventType :: InfoEvent -> IO InfoEventType
-getInfoEventType = D.infoEventType
+-- | Get the event type of an 'InfoEvent' ('Requested', 'Released', 'ConfigChanged').
+eventType :: InfoEvent -> IO InfoEventType
+eventType = D.infoEventType
 
 -- | Get the timestamp in nanoseconds of an 'InfoEvent'.
-getInfoEventTimestamp :: InfoEvent -> IO Timestamp
-getInfoEventTimestamp = D.infoEventTimestamp
+timestampNs :: InfoEvent -> IO Timestamp
+timestampNs = D.infoEventTimestamp
 
 -- | Get the line info snapshot associated with an 'InfoEvent'.
-getInfoEventLineInfo :: InfoEvent -> IO LineInfo
-getInfoEventLineInfo = D.infoEventLineInfo
+lineInfo :: InfoEvent -> IO LineInfo
+lineInfo = D.infoEventLineInfo

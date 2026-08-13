@@ -15,7 +15,6 @@ module Fuyu.GPIO.Line
   , Request
   , RequestConfig
   , Offset
-  , offset
   , pattern Offset
   , Value
   , pattern Active
@@ -52,44 +51,44 @@ module Fuyu.GPIO.Line
 
     -- * Line Settings Operations
   , setDirection
-  , getDirection
+  , direction
   , setEdgeDetection
-  , getEdgeDetection
+  , edgeDetection
   , setBias
-  , getBias
+  , bias
   , setDrive
-  , getDrive
+  , drive
   , setEventClock
-  , getEventClock
+  , eventClock
   , setActiveLow
-  , getActiveLow
+  , activeLow
   , setDebouncePeriodUs
-  , getDebouncePeriodUs
+  , debouncePeriodUs
   , setOutputValue
-  , getOutputValue
+  , outputValue
   , resetSettings
 
     -- * Line Configuration Operations
   , addSettings
-  , getSettings
+  , settings
   , setOutputValues
-  , getNumOffsets
-  , getConfiguredOffsets
+  , numOffsets
+  , configuredOffsets
   , resetConfig
 
     -- * Line Value Operations (Read / Write)
-  , getValue
-  , getValues
-  , getValuesSubset
+  , value
+  , values
+  , valuesSubset
   , setValue
   , setValues
   , setValuesSubset
 
     -- * Line Request Operations & Metadata
-  , getRequestChipName
-  , getRequestNumLines
-  , getRequestRequestedOffsets
-  , getRequestFd
+  , chipName
+  , numLines
+  , requestedOffsets
+  , fd
   , reconfigureLines
   ) where
 
@@ -127,57 +126,57 @@ setDirection :: Settings -> Direction -> IO ()
 setDirection set dir = unwrapOrThrow LineSettingsSetFailed (D.lineSettingsSetDirection set dir)
 
 -- | Get the line direction from the settings.
-getDirection :: Settings -> IO Direction
-getDirection = D.lineSettingsDirection
+direction :: Settings -> IO Direction
+direction = D.lineSettingsDirection
 
 -- | Set edge detection in the settings.
 setEdgeDetection :: Settings -> Edge -> IO ()
 setEdgeDetection set edge = unwrapOrThrow LineSettingsSetFailed (D.lineSettingsSetEdgeDetection set edge)
 
 -- | Get edge detection from the settings.
-getEdgeDetection :: Settings -> IO Edge
-getEdgeDetection = D.lineSettingsEdgeDetection
+edgeDetection :: Settings -> IO Edge
+edgeDetection = D.lineSettingsEdgeDetection
 
 -- | Set electrical bias in the settings.
 setBias :: Settings -> Bias -> IO ()
 setBias _ BiasUnknown = throwIO $ InvalidArgument "setBias: BiasUnknown is a read-only state and cannot be set as a bias configuration."
-setBias set bias        = unwrapOrThrow LineSettingsSetFailed (D.lineSettingsSetBias set bias)
+setBias set biasVal      = unwrapOrThrow LineSettingsSetFailed (D.lineSettingsSetBias set biasVal)
 
 -- | Get electrical bias from the settings.
-getBias :: Settings -> IO Bias
-getBias = D.lineSettingsBias
+bias :: Settings -> IO Bias
+bias = D.lineSettingsBias
 
 -- | Set drive mode in the settings.
 setDrive :: Settings -> Drive -> IO ()
-setDrive set drive = unwrapOrThrow LineSettingsSetFailed (D.lineSettingsSetDrive set drive)
+setDrive set driveMode = unwrapOrThrow LineSettingsSetFailed (D.lineSettingsSetDrive set driveMode)
 
 -- | Get drive mode from the settings.
-getDrive :: Settings -> IO Drive
-getDrive = D.lineSettingsDrive
+drive :: Settings -> IO Drive
+drive = D.lineSettingsDrive
 
 -- | Set event clock source in the settings.
 setEventClock :: Settings -> Clock -> IO ()
 setEventClock set clk = unwrapOrThrow LineSettingsSetFailed (D.lineSettingsSetEventClock set clk)
 
 -- | Get event clock source from the settings.
-getEventClock :: Settings -> IO Clock
-getEventClock = D.lineSettingsEventClock
+eventClock :: Settings -> IO Clock
+eventClock = D.lineSettingsEventClock
 
 -- | Set active-low in the settings.
 setActiveLow :: Settings -> Bool -> IO ()
 setActiveLow = D.lineSettingsSetActiveLow
 
 -- | Get active-low setting.
-getActiveLow :: Settings -> IO Bool
-getActiveLow = D.lineSettingsActiveLow
+activeLow :: Settings -> IO Bool
+activeLow = D.lineSettingsActiveLow
 
 -- | Set debounce period in microseconds.
 setDebouncePeriodUs :: Settings -> Word -> IO ()
 setDebouncePeriodUs = D.lineSettingsSetDebouncePeriodUs
 
 -- | Get debounce period in microseconds.
-getDebouncePeriodUs :: Settings -> IO Word
-getDebouncePeriodUs = D.lineSettingsDebouncePeriodUs
+debouncePeriodUs :: Settings -> IO Word
+debouncePeriodUs = D.lineSettingsDebouncePeriodUs
 
 -- | Set default output value in the settings.
 setOutputValue :: Settings -> Value -> IO ()
@@ -185,8 +184,8 @@ setOutputValue _ ValueError = throwIO $ InvalidArgument "setOutputValue: ValueEr
 setOutputValue set val = unwrapOrThrow LineSettingsSetFailed (D.lineSettingsSetOutputValue set val)
 
 -- | Get default output value from the settings.
-getOutputValue :: Settings -> IO Value
-getOutputValue = D.lineSettingsOutputValue
+outputValue :: Settings -> IO Value
+outputValue = D.lineSettingsOutputValue
 
 -- | Reset line settings object to default values.
 resetSettings :: Settings -> IO ()
@@ -198,25 +197,25 @@ resetSettings = D.lineSettingsReset
 
 -- | Add settings for a vector of line offsets in the configuration.
 addSettings :: Config -> V.Vector Offset -> Settings -> IO ()
-addSettings config offsets settings = unwrapOrThrow LineConfigNewFailed (D.lineConfigAddLineSettings config offsets settings)
+addSettings config offsets stgs = unwrapOrThrow LineConfigNewFailed (D.lineConfigAddLineSettings config offsets stgs)
 
 -- | Get settings for a specific line offset from configuration.
-getSettings :: Config -> Offset -> IO Settings
-getSettings config offset' = unwrapOrThrow LineConfigNewFailed (D.lineConfigLineSettings config offset')
+settings :: Config -> Offset -> IO Settings
+settings config offset' = unwrapOrThrow LineConfigNewFailed (D.lineConfigLineSettings config offset')
 
 -- | Set output values for lines in configuration.
 setOutputValues :: Config -> V.Vector Value -> IO ()
-setOutputValues config values
-  | V.elem ValueError values = throwIO $ InvalidArgument "setOutputValues: Vector contains ValueError pattern, which cannot be set as an output value."
-  | otherwise                = unwrapOrThrow LineConfigNewFailed (D.lineConfigSetOutputValues config values)
+setOutputValues config vals
+  | V.elem ValueError vals = throwIO $ InvalidArgument "setOutputValues: Vector contains ValueError pattern, which cannot be set as an output value."
+  | otherwise              = unwrapOrThrow LineConfigNewFailed (D.lineConfigSetOutputValues config vals)
 
 -- | Get the number of configured offsets in the line configuration.
-getNumOffsets :: Config -> IO Word
-getNumOffsets = D.lineConfigNumOffsets
+numOffsets :: Config -> IO Word
+numOffsets = D.lineConfigNumOffsets
 
 -- | Get all configured line offsets in the configuration as a Storable 'V.Vector'.
-getConfiguredOffsets :: Config -> IO (V.Vector Offset)
-getConfiguredOffsets = D.lineConfigConfiguredOffsets
+configuredOffsets :: Config -> IO (V.Vector Offset)
+configuredOffsets = D.lineConfigConfiguredOffsets
 
 -- | Reset line configuration object to empty state.
 resetConfig :: Config -> IO ()
@@ -227,16 +226,16 @@ resetConfig = D.lineConfigReset
 --------------------------------------------------------------------------------
 
 -- | Get the logical value of a requested GPIO line at the given offset.
-getValue :: Request -> Offset -> IO Value
-getValue req offset' = unwrapOrThrow LineValueReadFailed (D.lineRequestValue req offset')
+value :: Request -> Offset -> IO Value
+value req offset' = unwrapOrThrow LineValueReadFailed (D.lineRequestValue req offset')
 
 -- | Get the logical values of all requested lines as a Storable 'V.Vector'.
-getValues :: Request -> IO (V.Vector Value)
-getValues req = unwrapOrThrow LineValueReadFailed (D.lineRequestValues req)
+values :: Request -> IO (V.Vector Value)
+values req = unwrapOrThrow LineValueReadFailed (D.lineRequestValues req)
 
 -- | Get the logical values of a subset of requested lines specified by offsets.
-getValuesSubset :: Request -> V.Vector Offset -> IO (V.Vector Value)
-getValuesSubset req offsets = unwrapOrThrow LineValueReadFailed (D.lineRequestSubsetValues req offsets)
+valuesSubset :: Request -> V.Vector Offset -> IO (V.Vector Value)
+valuesSubset req offsets = unwrapOrThrow LineValueReadFailed (D.lineRequestSubsetValues req offsets)
 
 -- | Set the logical value of a requested GPIO line at the given offset.
 setValue :: Request -> Offset -> Value -> IO ()
@@ -260,20 +259,20 @@ setValuesSubset req offsets vals
 --------------------------------------------------------------------------------
 
 -- | Get the name of the chip this request was made on.
-getRequestChipName :: Request -> IO ByteString
-getRequestChipName = D.lineRequestChipName
+chipName :: Request -> IO ByteString
+chipName = D.lineRequestChipName
 
 -- | Get the number of lines in the request.
-getRequestNumLines :: Request -> IO Word
-getRequestNumLines = D.lineRequestNumLines
+numLines :: Request -> IO Word
+numLines = D.lineRequestNumLines
 
 -- | Get all requested line offsets as a Storable 'V.Vector'.
-getRequestRequestedOffsets :: Request -> IO (V.Vector Offset)
-getRequestRequestedOffsets = D.lineRequestRequestedOffsets
+requestedOffsets :: Request -> IO (V.Vector Offset)
+requestedOffsets = D.lineRequestRequestedOffsets
 
 -- | Get the file descriptor associated with the line request handle.
-getRequestFd :: Request -> IO Fd
-getRequestFd = D.lineRequestFd
+fd :: Request -> IO Fd
+fd = D.lineRequestFd
 
 -- | Update the configuration of lines associated with an active line request.
 reconfigureLines :: Request -> Config -> IO ()

@@ -8,7 +8,7 @@ import Fuyu.GPIO.Chip (withChip)
 import Fuyu.GPIO.Exception (withGpioApp)
 import Fuyu.GPIO.Line (withSettings, withConfig, withRequest)
 import qualified Fuyu.GPIO.Line as Line
-import Fuyu.GPIO.EdgeEvent (withEventBuffer)
+import Fuyu.GPIO.EdgeEvent (withBuffer)
 import qualified Fuyu.GPIO.EdgeEvent as Event
 
 -- Base & third-party libraries
@@ -18,7 +18,7 @@ import Data.Vector.Storable (singleton)
 chipPath :: FilePath
 chipPath = "/dev/gpiochip0" 
 
--- This constant defines the maximum duration 'waitEdgeEvents' will wait for an event.
+-- This constant defines the maximum duration 'waitEvents' will wait for an event.
 -- (This timeout can also be configured as infinite or immediate).
 fiveSecondsNs :: Event.Timeout
 fiveSecondsNs = Event.Nanoseconds 5000000000 
@@ -43,10 +43,10 @@ buttonSettings stgs = do
 
 buttonWorker :: Line.Request -> Event.Buffer -> IO ()
 buttonWorker req buf = do
-  res <- Event.waitEdgeEvents req fiveSecondsNs
+  res <- Event.waitEvents req fiveSecondsNs
   case res of 
     Event.EventReady readyReq -> do
-      events <- Event.readEdgeEvents readyReq buf -- Read events from user buffer (configured with capacity 1)
+      events <- Event.readEvents readyReq buf -- Read events from user buffer (configured with capacity 1)
       print events    
     Event.TimeoutResult -> putStrLn "Timeout: No event was read" -- Printed after the 5-second wait timeout expires
 
@@ -61,6 +61,6 @@ runApp = do
       withConfig $ \config -> do
         Line.addSettings config (singleton buttonOffset) settings
         withRequest chip Nothing config $ \request -> do
-          withEventBuffer bufferCapacity $ \buffer -> do
+          withBuffer bufferCapacity $ \buffer -> do
             putStrLn "Loop started: Press the button to generate events or Ctrl+C to exit"
             forever (buttonWorker request buffer)
