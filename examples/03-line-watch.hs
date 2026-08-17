@@ -1,6 +1,7 @@
 -- In this example we will learn how to monitor GPIO line status changes across processes using chip watching.
--- This example structures the application into modular helper functions ('runApp', 'monitorApp', 'lineApp'),
--- serving as an intermediate modular phase before refactoring nested brackets with monadic continuation ('ContT').
+-- This example structures the application into modular helper blocks ('runApp', 'monitorApp', 'lineApp'),
+-- serving as an intermediate modular phase before introducing resource management with 'Control.Monad.Managed'
+-- in the next example (04-led-and-button.hs) to eliminate deeply nested brackets.
 module Main where
 
 -- High-level resource brackets & exception handling
@@ -31,7 +32,11 @@ main = withGpioApp $ do
   runApp 
   putStrLn "Line status event monitor completed successfully."
 
--- 'runApp' centralizes worker threads and watchers to avoid pyramid of doom
+-------------------------------------------------
+-- Modular Application Blocks
+-------------------------------------------------
+
+-- 'runApp' centralizes worker threads and watchers organized in structured blocks
 runApp :: IO ()
 runApp = do
   putStrLn "Opening GPIO chip and starting line status watching..."

@@ -68,6 +68,7 @@ common example-config
             base >= 4.18 && < 5,
             fuyu-gpio,
             vector ^>= 0.13.1.0,
+            managed >= 1.0.10,
             transformers >= 0.5 && < 0.7,
             bytestring ^>= 0.12.1.0
 
@@ -80,16 +81,16 @@ executable 02-button
     import:           example-config
     main-is:          02-button.hs
     
-executable 03-led-and-button
+executable 03-line-watch
     import:           example-config
-    main-is:          03-led-and-button.hs
-    ghc-options:      -threaded 
-
-executable 04-line-watch
-    import:           example-config
-    main-is:          04-line-watch.hs
+    main-is:          03-line-watch.hs
     ghc-options:      -threaded -rtsopts
     
+executable 04-led-and-button
+    import:           example-config
+    main-is:          04-led-and-button.hs
+    ghc-options:      -threaded 
+
 executable 05-request-config  
     import:           example-config
     main-is:          05-request-config.hs
